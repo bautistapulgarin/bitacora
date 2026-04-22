@@ -3,29 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hola Mundo</title>
+    <title>Bitácora</title>
 
     <style>
         body {
             margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 20px;
             font-family: Arial, sans-serif;
-            background: #0f172a; /* azul oscuro sobrio */
+            background: #0f172a;
             color: #e2e8f0;
         }
 
         h1 {
-            font-size: 3rem;
-            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        button {
+            background: #22c55e;
+            cursor: pointer;
+        }
+
+        .registro {
+            background: rgba(255,255,255,0.05);
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .fecha {
+            font-size: 12px;
+            color: #94a3b8;
         }
     </style>
 </head>
+
 <body>
 
-    <h1>Hola Mundo</h1>
+<div class="container">
+    <h1>Bitácora</h1>
+
+    <input id="descripcion" placeholder="Descripción del registro">
+    <button onclick="guardar()">Guardar</button>
+
+    <div id="lista"></div>
+</div>
+
+<script type="module">
+    // Importaciones Firebase (versión modular correcta)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        addDoc, 
+        getDocs, 
+        query, 
+        orderBy 
+    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+    // Configuración (la tuya)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
+        authDomain: "bitacora-8f4ce.firebaseapp.com",
+        projectId: "bitacora-8f4ce",
+        storageBucket: "bitacora-8f4ce.firebasestorage.app",
+        messagingSenderId: "270773053654",
+        appId: "1:270773053654:web:953528165c86f79e638177"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Guardar datos
+    window.guardar = async function () {
+        const descripcion = document.getElementById("descripcion").value;
+
+        if (!descripcion) return;
+
+        await addDoc(collection(db, "bitacora"), {
+            descripcion: descripcion,
+            fecha: new Date()
+        });
+
+        document.getElementById("descripcion").value = "";
+        cargar();
+    };
+
+    // Cargar datos
+    async function cargar() {
+        const lista = document.getElementById("lista");
+        lista.innerHTML = "";
+
+        const q = query(collection(db, "bitacora"), orderBy("fecha", "desc"));
+        const snapshot = await getDocs(q);
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+
+            const div = document.createElement("div");
+            div.className = "registro";
+
+            const fecha = data.fecha?.seconds
+                ? new Date(data.fecha.seconds * 1000).toLocaleString()
+                : "";
+
+            div.innerHTML = `
+                <strong>${data.descripcion}</strong>
+                <div class="fecha">${fecha}</div>
+            `;
+
+            lista.appendChild(div);
+        });
+    }
+
+    // Inicializar carga
+    cargar();
+
+</script>
 
 </body>
 </html>
