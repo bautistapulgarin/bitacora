@@ -101,7 +101,6 @@ button.secondary {
     <textarea id="tarea" placeholder="Tarea"></textarea>
     <textarea id="dolores" placeholder="Ampliación de dolores"></textarea>
 
-    <!-- NUEVOS CAMPOS -->
     <label>Fecha de compromiso</label>
     <input type="date" id="fechaCompromiso">
 
@@ -227,6 +226,11 @@ async function cargarRegistros() {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
 
+    if (!proyectoId) {
+        lista.innerHTML = "No hay registros";
+        return;
+    }
+
     const q = query(
         collection(db, "bitacora"),
         where("proyectoId", "==", proyectoId)
@@ -267,10 +271,17 @@ async function cargarRegistros() {
     });
 }
 
-// EXPORTAR EXCEL
-window.exportarExcel = async () => {
+// EXPORTAR EXCEL (CORREGIDO)
+window.exportarExcel = async function () {
 
-    const proyectoId = document.getElementById("proyectoSelect").value;
+    const select = document.getElementById("proyectoSelect");
+    const proyectoId = select.value;
+    const nombreProyecto = select.options[select.selectedIndex]?.text || "proyecto";
+
+    if (!proyectoId) {
+        alert("Selecciona un proyecto");
+        return;
+    }
 
     const q = query(
         collection(db, "bitacora"),
@@ -285,20 +296,31 @@ window.exportarExcel = async () => {
         const d = doc.data();
 
         datos.push({
+            Proyecto: nombreProyecto,
             Fecha: d.fecha?.seconds ? new Date(d.fecha.seconds * 1000).toLocaleString() : "",
             Observación: d.observacion || "",
             Tarea: d.tarea || "",
-            Compromiso: d.fechaCompromiso || "",
+            "Fecha Compromiso": d.fechaCompromiso || "",
             Urgencia: d.urgencia || "",
-            Importancia: d.importancia || ""
+            Importancia: d.importancia || "",
+            Anexos: d.anexos || ""
         });
     });
+
+    if (datos.length === 0) {
+        alert("No hay datos para exportar");
+        return;
+    }
 
     const ws = XLSX.utils.json_to_sheet(datos);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Bitacora");
 
-    XLSX.writeFile(wb, "bitacora_v2.xlsx");
+    const nombreArchivo = nombreProyecto
+        .replace(/[^a-zA-Z0-9]/g, "_")
+        .toLowerCase();
+
+    XLSX.writeFile(wb, `${nombreArchivo}_bitacora.xlsx`);
 };
 
 document.getElementById("proyectoSelect")
