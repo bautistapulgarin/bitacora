@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- TÍTULO EN PESTAÑA -->
 <title>Bitácora v2.0</title>
 
 <style>
@@ -47,7 +46,6 @@ button {
 
 .titulo {
     text-align: center;
-    margin-bottom: 10px;
 }
 
 .version {
@@ -63,15 +61,12 @@ button {
 
 <div class="container">
 
-<!-- TÍTULO PRINCIPAL -->
 <div class="titulo">
     <h1>Bitácora</h1>
 </div>
 
-<!-- VERSIÓN -->
-<div class="version">
-    Versión 2.0
-</div>
+<!-- VERSIÓN DINÁMICA -->
+<div class="version" id="versionInfo"></div>
 
 <h3>Crear Proyecto</h3>
 <input id="nuevoProyecto" placeholder="Nombre del proyecto">
@@ -126,6 +121,24 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// =======================
+// VERSIÓN CON FECHA Y HORA
+// =======================
+function actualizarVersion() {
+    const ahora = new Date();
+
+    const fecha = ahora.toLocaleDateString();
+    const hora = ahora.toLocaleTimeString();
+
+    document.getElementById("versionInfo").innerText =
+        `Versión 2.0 | ${fecha} ${hora}`;
+}
+
+actualizarVersion();
+
+// =======================
+// CREAR PROYECTO
+// =======================
 window.crearProyecto = async function () {
     const nombre = document.getElementById("nuevoProyecto").value.trim();
     if (!nombre) return;
@@ -139,6 +152,9 @@ window.crearProyecto = async function () {
     cargarProyectos();
 };
 
+// =======================
+// CARGAR PROYECTOS
+// =======================
 async function cargarProyectos() {
     const select = document.getElementById("proyectoSelect");
     select.innerHTML = "";
@@ -155,6 +171,9 @@ async function cargarProyectos() {
     cargarRegistros();
 }
 
+// =======================
+// GUARDAR REGISTRO
+// =======================
 window.guardarRegistro = async function () {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
@@ -188,6 +207,9 @@ function limpiar() {
     document.getElementById("anexos").value = "";
 }
 
+// =======================
+// CARGAR REGISTROS
+// =======================
 async function cargarRegistros() {
 
     const lista = document.getElementById("lista");
@@ -223,6 +245,9 @@ async function cargarRegistros() {
     });
 }
 
+// =======================
+// EXPORTAR EXCEL
+// =======================
 window.exportarExcel = async function () {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
