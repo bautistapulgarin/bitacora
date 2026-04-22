@@ -19,11 +19,6 @@ body {
     border-bottom: 1px solid #e5e7eb;
 }
 
-.header h1 {
-    margin: 0;
-    font-size: 20px;
-}
-
 .version {
     font-size: 12px;
     color: #6b7280;
@@ -49,11 +44,6 @@ input, textarea, select {
     margin-top: 8px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    font-size: 14px;
-}
-
-textarea {
-    resize: vertical;
 }
 
 button {
@@ -79,11 +69,6 @@ button.secondary {
 .fecha {
     font-size: 12px;
     color: #6b7280;
-}
-
-h3 {
-    margin-top: 0;
-    font-size: 16px;
 }
 </style>
 </head>
@@ -111,10 +96,33 @@ h3 {
 
 <div class="card">
     <h3>Nuevo Registro</h3>
+
     <textarea id="observacion" placeholder="Observación"></textarea>
     <textarea id="tarea" placeholder="Tarea"></textarea>
     <textarea id="dolores" placeholder="Ampliación de dolores"></textarea>
+
+    <!-- NUEVOS CAMPOS -->
+    <label>Fecha de compromiso</label>
+    <input type="date" id="fechaCompromiso">
+
+    <label>Urgencia</label>
+    <select id="urgencia">
+        <option value="">Seleccionar</option>
+        <option value="Baja">Baja</option>
+        <option value="Media">Media</option>
+        <option value="Alta">Alta</option>
+    </select>
+
+    <label>Importancia</label>
+    <select id="importancia">
+        <option value="">Seleccionar</option>
+        <option value="Baja">Baja</option>
+        <option value="Media">Media</option>
+        <option value="Alta">Alta</option>
+    </select>
+
     <input id="anexos" placeholder="Link de anexos">
+
     <button onclick="guardarRegistro()">Guardar registro</button>
 </div>
 
@@ -130,17 +138,11 @@ h3 {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
-    getFirestore,
-    collection,
-    addDoc,
-    getDocs,
-    query,
-    where,
-    serverTimestamp
+    getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
+    apiKey: "AIzaSy...",
     authDomain: "bitacora-8f4ce.firebaseapp.com",
     projectId: "bitacora-8f4ce",
     storageBucket: "bitacora-8f4ce.firebasestorage.app",
@@ -191,16 +193,14 @@ window.guardarRegistro = async () => {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
 
-    if (!proyectoId) {
-        alert("Selecciona un proyecto");
-        return;
-    }
-
     await addDoc(collection(db, "bitacora"), {
         proyectoId,
         observacion: document.getElementById("observacion").value || null,
         tarea: document.getElementById("tarea").value || null,
         dolores: document.getElementById("dolores").value || null,
+        fechaCompromiso: document.getElementById("fechaCompromiso").value || null,
+        urgencia: document.getElementById("urgencia").value || null,
+        importancia: document.getElementById("importancia").value || null,
         anexos: document.getElementById("anexos").value || null,
         fecha: serverTimestamp()
     });
@@ -213,10 +213,13 @@ function limpiar() {
     document.getElementById("observacion").value = "";
     document.getElementById("tarea").value = "";
     document.getElementById("dolores").value = "";
+    document.getElementById("fechaCompromiso").value = "";
+    document.getElementById("urgencia").value = "";
+    document.getElementById("importancia").value = "";
     document.getElementById("anexos").value = "";
 }
 
-// CARGAR REGISTROS CORREGIDO
+// CARGAR REGISTROS
 async function cargarRegistros() {
 
     const lista = document.getElementById("lista");
@@ -224,61 +227,50 @@ async function cargarRegistros() {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
 
-    if (!proyectoId) {
-        lista.innerHTML = "No hay registros";
+    const q = query(
+        collection(db, "bitacora"),
+        where("proyectoId", "==", proyectoId)
+    );
+
+    const snapshot = await getDocs(q);
+
+    let docs = [];
+    snapshot.forEach(doc => docs.push(doc.data()));
+
+    docs.sort((a, b) => (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0));
+
+    if (docs.length === 0) {
+        lista.innerHTML = "No hay registros para este proyecto";
         return;
     }
 
-    try {
-        const q = query(
-            collection(db, "bitacora"),
-            where("proyectoId", "==", proyectoId)
-        );
+    lista.innerHTML = "";
 
-        const snapshot = await getDocs(q);
+    docs.forEach(d => {
+        const fecha = d.fecha?.seconds
+            ? new Date(d.fecha.seconds * 1000).toLocaleString()
+            : "";
 
-        let docs = [];
-        snapshot.forEach(doc => docs.push(doc.data()));
+        const div = document.createElement("div");
+        div.className = "registro";
 
-        docs.sort((a, b) => (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0));
+        div.innerHTML = `
+            <div class="fecha">${fecha}</div>
+            ${d.observacion ? `<b>Observación:</b> ${d.observacion}<br>` : ""}
+            ${d.tarea ? `<b>Tarea:</b> ${d.tarea}<br>` : ""}
+            ${d.fechaCompromiso ? `<b>Compromiso:</b> ${d.fechaCompromiso}<br>` : ""}
+            ${d.urgencia ? `<b>Urgencia:</b> ${d.urgencia}<br>` : ""}
+            ${d.importancia ? `<b>Importancia:</b> ${d.importancia}<br>` : ""}
+        `;
 
-        if (docs.length === 0) {
-            lista.innerHTML = "No hay registros para este proyecto";
-            return;
-        }
-
-        lista.innerHTML = "";
-
-        docs.forEach(d => {
-            const fecha = d.fecha?.seconds
-                ? new Date(d.fecha.seconds * 1000).toLocaleString()
-                : "";
-
-            const div = document.createElement("div");
-            div.className = "registro";
-
-            div.innerHTML = `
-                <div class="fecha">${fecha}</div>
-                ${d.observacion ? `<b>Observación:</b> ${d.observacion}<br>` : ""}
-                ${d.tarea ? `<b>Tarea:</b> ${d.tarea}<br>` : ""}
-                ${d.dolores ? `<b>Dolores:</b> ${d.dolores}<br>` : ""}
-                ${d.anexos ? `<b>Anexos:</b> <a href="${d.anexos}" target="_blank">Ver</a>` : ""}
-            `;
-
-            lista.appendChild(div);
-        });
-
-    } catch (error) {
-        console.error(error);
-        lista.innerHTML = "Error cargando datos";
-    }
+        lista.appendChild(div);
+    });
 }
 
 // EXPORTAR EXCEL
 window.exportarExcel = async () => {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
-    if (!proyectoId) return;
 
     const q = query(
         collection(db, "bitacora"),
@@ -293,13 +285,12 @@ window.exportarExcel = async () => {
         const d = doc.data();
 
         datos.push({
-            Fecha: d.fecha?.seconds
-                ? new Date(d.fecha.seconds * 1000).toLocaleString()
-                : "",
+            Fecha: d.fecha?.seconds ? new Date(d.fecha.seconds * 1000).toLocaleString() : "",
             Observación: d.observacion || "",
             Tarea: d.tarea || "",
-            Dolores: d.dolores || "",
-            Anexos: d.anexos || ""
+            Compromiso: d.fechaCompromiso || "",
+            Urgencia: d.urgencia || "",
+            Importancia: d.importancia || ""
         });
     });
 
@@ -310,11 +301,9 @@ window.exportarExcel = async () => {
     XLSX.writeFile(wb, "bitacora_v2.xlsx");
 };
 
-// EVENTO
 document.getElementById("proyectoSelect")
     .addEventListener("change", cargarRegistros);
 
-// INIT
 cargarProyectos();
 
 </script>
