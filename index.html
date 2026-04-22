@@ -1,3 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora v2.0</title>
+
+<style>
+body {
+    font-family: "Segoe UI", Arial;
+    background: #f5f7fa;
+    margin: 0;
+}
+
+.header {
+    background: white;
+    padding: 15px 30px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.container {
+    max-width: 900px;
+    margin: 30px auto;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px;
+    background: #065f46;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.lista-proyectos {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.item-proyecto {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.item-proyecto:hover {
+    background: #e5e7eb;
+}
+
+.registro {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    position: relative;
+}
+
+.completado {
+    background: #dcfce7;
+    border-left: 4px solid #16a34a;
+}
+
+.check-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.check-btn.activo {
+    background: #16a34a;
+    color: white;
+}
+
+.prioridad {
+    font-weight: bold;
+    font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>Bitácora v2.0</h2>
+</div>
+
+<div class="container">
+
+<div class="card">
+<h3>Crear Proyecto</h3>
+<input id="nuevoProyecto">
+<button onclick="crearProyecto()">Crear</button>
+</div>
+
+<div class="card">
+<h3>Seleccionar Proyecto</h3>
+<input id="busquedaProyecto" placeholder="Buscar proyecto...">
+<div id="listaProyectos" class="lista-proyectos"></div>
+<button onclick="exportarExcel()">Descargar Excel</button>
+</div>
+
+<div class="card">
+<h3>Nuevo Registro</h3>
+
+<textarea id="observacion" placeholder="Observación"></textarea>
+<textarea id="tarea" placeholder="Tarea"></textarea>
+<textarea id="dolores" placeholder="Dolores"></textarea>
+
+<label>Fecha compromiso</label>
+<input type="date" id="fechaCompromiso">
+
+<label>Urgencia</label>
+<select id="urgencia">
+<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+</select>
+
+<label>Importancia</label>
+<select id="importancia">
+<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+</select>
+
+<input id="anexos" placeholder="Anexos">
+
+<button onclick="guardarRegistro()">Guardar</button>
+</div>
+
+<div class="card">
+<h3>Registros</h3>
+<div id="lista"></div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
@@ -15,23 +172,88 @@ const db = getFirestore(app);
 let proyectos = [];
 let proyectoSeleccionado = null;
 
-// 🔴 FUNCIÓN DE PRIORIDAD
+// PRIORIDAD
 function getPrioridad(d){
-
     const u = d.urgencia;
     const i = d.importancia;
 
-    if(i === "Alta" && u === "Alta") return 1;
-    if(i === "Alta" && u === "Media") return 2;
-    if(i === "Alta" && u === "Baja") return 3;
-
-    if(i === "Media" && u === "Alta") return 4;
-    if(i === "Media" && u === "Media") return 5;
-
-    if(i === "Baja") return 6;
-
+    if(i==="Alta" && u==="Alta") return 1;
+    if(i==="Alta" && u==="Media") return 2;
+    if(i==="Alta" && u==="Baja") return 3;
+    if(i==="Media" && u==="Alta") return 4;
+    if(i==="Media" && u==="Media") return 5;
+    if(i==="Baja") return 6;
     return 7;
 }
+
+// CREAR PROYECTO
+window.crearProyecto = async ()=>{
+const nombre = nuevoProyecto.value.trim();
+if(!nombre) return;
+await addDoc(collection(db,"proyectos"),{nombre});
+nuevoProyecto.value="";
+cargarProyectos();
+};
+
+// CARGAR PROYECTOS
+async function cargarProyectos(){
+const snap = await getDocs(collection(db,"proyectos"));
+proyectos=[];
+snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
+renderProyectos(proyectos);
+}
+
+// RENDER PROYECTOS
+function renderProyectos(lista){
+const cont = document.getElementById("listaProyectos");
+cont.innerHTML="";
+lista.forEach(p=>{
+const div=document.createElement("div");
+div.className="item-proyecto";
+div.textContent=p.nombre;
+div.onclick=()=>{
+proyectoSeleccionado=p;
+busquedaProyecto.value=p.nombre;
+cont.innerHTML="";
+cargarRegistros();
+};
+cont.appendChild(div);
+});
+}
+
+// BUSCADOR
+busquedaProyecto.addEventListener("input",(e)=>{
+const val=e.target.value.toLowerCase();
+renderProyectos(proyectos.filter(p=>p.nombre.toLowerCase().includes(val)));
+});
+
+// GUARDAR
+window.guardarRegistro = async ()=>{
+if(!proyectoSeleccionado) return;
+
+await addDoc(collection(db,"bitacora"),{
+proyectoId:proyectoSeleccionado.id,
+observacion:observacion.value,
+tarea:tarea.value,
+dolores:dolores.value,
+fechaCompromiso:fechaCompromiso.value||null,
+urgencia:urgencia.value,
+importancia:importancia.value,
+anexos:anexos.value,
+completado:false,
+fecha:serverTimestamp()
+});
+
+cargarRegistros();
+};
+
+// CHECK
+window.toggleCheck = async(id,estado)=>{
+await updateDoc(doc(db,"bitacora",id),{
+completado:!estado
+});
+cargarRegistros();
+};
 
 // CARGAR REGISTROS
 async function cargarRegistros(){
@@ -44,30 +266,24 @@ lista.innerHTML="No hay registros";
 return;
 }
 
-const q = query(
-collection(db,"bitacora"),
-where("proyectoId","==",proyectoSeleccionado.id)
-);
+const q=query(collection(db,"bitacora"),
+where("proyectoId","==",proyectoSeleccionado.id));
 
-const snap = await getDocs(q);
+const snap=await getDocs(q);
 
 let docs=[];
 snap.forEach(d=>docs.push({id:d.id,...d.data()}));
 
-// 🔴 ORDENAMIENTO COMPUESTO
+// ORDEN COMPUESTO
 docs.sort((a,b)=>{
+const pA=getPrioridad(a);
+const pB=getPrioridad(b);
+if(pA!==pB) return pA-pB;
 
-    const pA = getPrioridad(a);
-    const pB = getPrioridad(b);
+if(!a.fechaCompromiso) return 1;
+if(!b.fechaCompromiso) return -1;
 
-    // 1. PRIORIDAD
-    if(pA !== pB) return pA - pB;
-
-    // 2. FECHA COMPROMISO
-    if(!a.fechaCompromiso) return 1;
-    if(!b.fechaCompromiso) return -1;
-
-    return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
+return new Date(a.fechaCompromiso)-new Date(b.fechaCompromiso);
 });
 
 if(docs.length===0){
@@ -79,24 +295,65 @@ lista.innerHTML="";
 
 docs.forEach(d=>{
 
-const div = document.createElement("div");
+const div=document.createElement("div");
 div.className="registro";
 if(d.completado) div.classList.add("completado");
 
-// 🔴 ETIQUETA DE PRIORIDAD
-const prioridad = getPrioridad(d);
+const prioridad=getPrioridad(d);
 
 div.innerHTML=`
-<button onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+<button class="check-btn ${d.completado?"activo":""}"
+onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
 
-<b>Prioridad ${prioridad}</b><br>
+<div class="prioridad">Prioridad ${prioridad}</div>
+
 <b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
+<b>Urgencia:</b> ${d.urgencia || "-"}<br>
+<b>Importancia:</b> ${d.importancia || "-"}<br>
 
-${d.observacion || ""}
+${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
+${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
+${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
+${d.anexos ? `<a href="${d.anexos}" target="_blank">Ver anexos</a>` : ""}
 `;
 
 lista.appendChild(div);
 });
 
 }
+
+// EXPORTAR
+window.exportarExcel = async ()=>{
+if(!proyectoSeleccionado) return;
+
+const q=query(collection(db,"bitacora"),
+where("proyectoId","==",proyectoSeleccionado.id));
+
+const snap=await getDocs(q);
+
+let datos=[];
+
+snap.forEach(d=>{
+const x=d.data();
+datos.push({
+Proyecto:proyectoSeleccionado.nombre,
+Fecha:x.fechaCompromiso,
+Urgencia:x.urgencia,
+Importancia:x.importancia,
+Observacion:x.observacion
+});
+});
+
+const ws=XLSX.utils.json_to_sheet(datos);
+const wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"data");
+
+XLSX.writeFile(wb,proyectoSeleccionado.nombre+".xlsx");
+};
+
+cargarProyectos();
+
 </script>
+
+</body>
+</html>
