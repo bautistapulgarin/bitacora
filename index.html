@@ -218,7 +218,7 @@ function limpiar() {
     document.getElementById("anexos").value = "";
 }
 
-// CARGAR REGISTROS
+// CARGAR REGISTROS (MOSTRANDO TODO)
 async function cargarRegistros() {
 
     const lista = document.getElementById("lista");
@@ -260,18 +260,24 @@ async function cargarRegistros() {
 
         div.innerHTML = `
             <div class="fecha">${fecha}</div>
+
             ${d.observacion ? `<b>Observación:</b> ${d.observacion}<br>` : ""}
             ${d.tarea ? `<b>Tarea:</b> ${d.tarea}<br>` : ""}
-            ${d.fechaCompromiso ? `<b>Compromiso:</b> ${d.fechaCompromiso}<br>` : ""}
+            ${d.dolores ? `<b>Dolores:</b> ${d.dolores}<br>` : ""}
+
+            ${d.fechaCompromiso ? `<b>Fecha compromiso:</b> ${d.fechaCompromiso}<br>` : ""}
+
             ${d.urgencia ? `<b>Urgencia:</b> ${d.urgencia}<br>` : ""}
             ${d.importancia ? `<b>Importancia:</b> ${d.importancia}<br>` : ""}
+
+            ${d.anexos ? `<b>Anexos:</b> <a href="${d.anexos}" target="_blank">Ver enlace</a>` : ""}
         `;
 
         lista.appendChild(div);
     });
 }
 
-// EXPORTAR EXCEL (CORREGIDO)
+// EXPORTAR EXCEL
 window.exportarExcel = async function () {
 
     const select = document.getElementById("proyectoSelect");
@@ -300,6 +306,7 @@ window.exportarExcel = async function () {
             Fecha: d.fecha?.seconds ? new Date(d.fecha.seconds * 1000).toLocaleString() : "",
             Observación: d.observacion || "",
             Tarea: d.tarea || "",
+            Dolores: d.dolores || "",
             "Fecha Compromiso": d.fechaCompromiso || "",
             Urgencia: d.urgencia || "",
             Importancia: d.importancia || "",
