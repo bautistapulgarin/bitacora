@@ -7,77 +7,135 @@
 
 <style>
 body {
-    font-family: Arial;
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 20px;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f5f7fa;
+    color: #1f2937;
+    margin: 0;
 }
 
+/* HEADER */
+.header {
+    background: white;
+    padding: 15px 30px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.version {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* CONTENEDOR */
 .container {
-    max-width: 800px;
-    margin: auto;
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 0 20px;
 }
 
-input, textarea, select, button {
+/* TARJETAS */
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+/* INPUTS */
+input, textarea, select {
     width: 100%;
     padding: 10px;
     margin-top: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
 }
 
+textarea {
+    resize: vertical;
+}
+
+/* BOTONES */
 button {
-    background: #22c55e;
-    cursor: pointer;
-}
-
-.registro {
     margin-top: 10px;
     padding: 10px;
-    background: rgba(255,255,255,0.05);
+    background: #065f46;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button.secondary {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+/* REGISTROS */
+.registro {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 0;
 }
 
 .fecha {
     font-size: 12px;
-    color: #94a3b8;
+    color: #6b7280;
 }
 
-.version {
-    text-align: center;
-    font-size: 12px;
-    margin-bottom: 20px;
+/* TITULOS */
+h3 {
+    margin-top: 0;
+    font-size: 16px;
 }
 </style>
 </head>
 
 <body>
 
+<div class="header">
+    <h1>Bitácora</h1>
+    <div id="versionInfo" class="version"></div>
+</div>
+
 <div class="container">
 
-<h1>Bitácora</h1>
-<div id="versionInfo" class="version"></div>
+<!-- CREAR PROYECTO -->
+<div class="card">
+    <h3>Crear Proyecto</h3>
+    <input id="nuevoProyecto" placeholder="Nombre del proyecto">
+    <button onclick="crearProyecto()">Crear proyecto</button>
+</div>
 
-<h3>Crear Proyecto</h3>
-<input id="nuevoProyecto" placeholder="Nombre del proyecto">
-<button onclick="crearProyecto()">Crear</button>
+<!-- SELECCIONAR -->
+<div class="card">
+    <h3>Proyecto</h3>
+    <select id="proyectoSelect"></select>
+    <button class="secondary" onclick="exportarExcel()">Descargar Excel</button>
+</div>
 
-<hr>
+<!-- REGISTRO -->
+<div class="card">
+    <h3>Nuevo Registro</h3>
 
-<h3>Seleccionar Proyecto</h3>
-<select id="proyectoSelect"></select>
-<button onclick="exportarExcel()">Descargar Excel</button>
+    <textarea id="observacion" placeholder="Observación"></textarea>
+    <textarea id="tarea" placeholder="Tarea"></textarea>
+    <textarea id="dolores" placeholder="Ampliación de dolores"></textarea>
+    <input id="anexos" placeholder="Link de anexos">
 
-<hr>
+    <button onclick="guardarRegistro()">Guardar registro</button>
+</div>
 
-<h3>Nuevo Registro</h3>
-<textarea id="observacion" placeholder="Observación"></textarea>
-<textarea id="tarea" placeholder="Tarea"></textarea>
-<textarea id="dolores" placeholder="Dolores"></textarea>
-<input id="anexos" placeholder="Anexos">
-
-<button onclick="guardarRegistro()">Guardar</button>
-
-<hr>
-
-<div id="lista"></div>
+<!-- LISTADO -->
+<div class="card">
+    <h3>Registros</h3>
+    <div id="lista"></div>
+</div>
 
 </div>
 
@@ -96,7 +154,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
+    apiKey: "AIzaSy...",
     authDomain: "bitacora-8f4ce.firebaseapp.com",
     projectId: "bitacora-8f4ce",
     storageBucket: "bitacora-8f4ce.firebasestorage.app",
@@ -172,7 +230,7 @@ function limpiar() {
     document.getElementById("anexos").value = "";
 }
 
-// CARGAR REGISTROS (SIN ERROR DE ÍNDICE)
+// CARGAR REGISTROS
 async function cargarRegistros() {
 
     const lista = document.getElementById("lista");
@@ -181,53 +239,40 @@ async function cargarRegistros() {
     const proyectoId = document.getElementById("proyectoSelect").value;
     if (!proyectoId) return;
 
-    try {
-        const q = query(
-            collection(db, "bitacora"),
-            where("proyectoId", "==", proyectoId)
-        );
+    const q = query(
+        collection(db, "bitacora"),
+        where("proyectoId", "==", proyectoId)
+    );
 
-        const snapshot = await getDocs(q);
+    const snapshot = await getDocs(q);
 
-        let docs = [];
-        snapshot.forEach(doc => docs.push(doc.data()));
+    let docs = [];
+    snapshot.forEach(doc => docs.push(doc.data()));
 
-        // ORDENAR EN FRONTEND (evita índice)
-        docs.sort((a, b) => {
-            return (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0);
-        });
+    docs.sort((a, b) => (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0));
 
-        lista.innerHTML = "";
+    lista.innerHTML = "";
 
-        if (docs.length === 0) {
-            lista.innerHTML = "No hay registros para este proyecto";
-            return;
-        }
-
-        docs.forEach(d => {
-
-            const fecha = d.fecha?.seconds
-                ? new Date(d.fecha.seconds * 1000).toLocaleString()
-                : "";
-
-            const div = document.createElement("div");
-            div.className = "registro";
-
-            div.innerHTML = `
-                <div class="fecha">${fecha}</div>
-                ${d.observacion ? `<b>Obs:</b> ${d.observacion}<br>` : ""}
-                ${d.tarea ? `<b>Tarea:</b> ${d.tarea}<br>` : ""}
-                ${d.dolores ? `<b>Dolores:</b> ${d.dolores}<br>` : ""}
-                ${d.anexos ? `<b>Anexos:</b> <a href="${d.anexos}" target="_blank">Ver</a>` : ""}
-            `;
-
-            lista.appendChild(div);
-        });
-
-    } catch (error) {
-        console.error(error);
-        lista.innerHTML = "Error cargando datos. Revisa F12.";
+    if (docs.length === 0) {
+        lista.innerHTML = "No hay registros";
+        return;
     }
+
+    docs.forEach(d => {
+        const fecha = d.fecha?.seconds
+            ? new Date(d.fecha.seconds * 1000).toLocaleString()
+            : "";
+
+        const div = document.createElement("div");
+        div.className = "registro";
+
+        div.innerHTML = `
+            <div class="fecha">${fecha}</div>
+            ${d.observacion || ""}
+        `;
+
+        lista.appendChild(div);
+    });
 }
 
 // EXPORTAR EXCEL
@@ -266,7 +311,7 @@ window.exportarExcel = async () => {
     XLSX.writeFile(wb, "bitacora_v2.xlsx");
 };
 
-// EVENTO CAMBIO
+// EVENTO
 document.getElementById("proyectoSelect")
     .addEventListener("change", cargarRegistros);
 
