@@ -61,14 +61,40 @@ button.secondary {
     color: #111827;
 }
 
+/* REGISTROS */
 .registro {
     border-bottom: 1px solid #e5e7eb;
-    padding: 10px 0;
+    padding: 10px;
+    position: relative;
+}
+
+/* ESTADO COMPLETADO */
+.completado {
+    background: #dcfce7;
+    border-left: 4px solid #16a34a;
 }
 
 .fecha {
     font-size: 12px;
     color: #6b7280;
+}
+
+/* BOTON CHECK */
+.check-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: #e5e7eb;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.check-btn.activo {
+    background: #16a34a;
+    color: white;
 }
 </style>
 </head>
@@ -137,16 +163,15 @@ button.secondary {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
-    getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp
+    getFirestore, collection, addDoc, getDocs,
+    query, where, serverTimestamp,
+    updateDoc, doc
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSy...",
     authDomain: "bitacora-8f4ce.firebaseapp.com",
-    projectId: "bitacora-8f4ce",
-    storageBucket: "bitacora-8f4ce.firebasestorage.app",
-    messagingSenderId: "270773053654",
-    appId: "1:270773053654:web:953528165c86f79e638177"
+    projectId: "bitacora-8f4ce"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -177,10 +202,10 @@ async function cargarProyectos() {
 
     const snapshot = await getDocs(collection(db, "proyectos"));
 
-    snapshot.forEach(doc => {
+    snapshot.forEach(docSnap => {
         const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = doc.data().nombre;
+        option.value = docSnap.id;
+        option.textContent = docSnap.data().nombre;
         select.appendChild(option);
     });
 
@@ -201,35 +226,28 @@ window.guardarRegistro = async () => {
         urgencia: document.getElementById("urgencia").value || null,
         importancia: document.getElementById("importancia").value || null,
         anexos: document.getElementById("anexos").value || null,
+        completado: false,
         fecha: serverTimestamp()
     });
 
-    limpiar();
     cargarRegistros();
 };
 
-function limpiar() {
-    document.getElementById("observacion").value = "";
-    document.getElementById("tarea").value = "";
-    document.getElementById("dolores").value = "";
-    document.getElementById("fechaCompromiso").value = "";
-    document.getElementById("urgencia").value = "";
-    document.getElementById("importancia").value = "";
-    document.getElementById("anexos").value = "";
-}
+// CAMBIAR ESTADO
+window.toggleCheck = async (id, estadoActual) => {
+    await updateDoc(doc(db, "bitacora", id), {
+        completado: !estadoActual
+    });
+    cargarRegistros();
+};
 
-// CARGAR REGISTROS (MOSTRANDO TODO)
+// CARGAR REGISTROS
 async function cargarRegistros() {
 
     const lista = document.getElementById("lista");
     lista.innerHTML = "Cargando...";
 
     const proyectoId = document.getElementById("proyectoSelect").value;
-
-    if (!proyectoId) {
-        lista.innerHTML = "No hay registros";
-        return;
-    }
 
     const q = query(
         collection(db, "bitacora"),
@@ -239,18 +257,21 @@ async function cargarRegistros() {
     const snapshot = await getDocs(q);
 
     let docs = [];
-    snapshot.forEach(doc => docs.push(doc.data()));
+    snapshot.forEach(docSnap => {
+        docs.push({ id: docSnap.id, ...docSnap.data() });
+    });
 
     docs.sort((a, b) => (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0));
 
     if (docs.length === 0) {
-        lista.innerHTML = "No hay registros para este proyecto";
+        lista.innerHTML = "No hay registros";
         return;
     }
 
     lista.innerHTML = "";
 
     docs.forEach(d => {
+
         const fecha = d.fecha?.seconds
             ? new Date(d.fecha.seconds * 1000).toLocaleString()
             : "";
@@ -258,78 +279,25 @@ async function cargarRegistros() {
         const div = document.createElement("div");
         div.className = "registro";
 
-        div.innerHTML = `
-            <div class="fecha">${fecha}</div>
+        if (d.completado) div.classList.add("completado");
 
+        div.innerHTML = `
+            <button class="check-btn ${d.completado ? "activo" : ""}"
+                onclick="toggleCheck('${d.id}', ${d.completado})">✔</button>
+
+            <div class="fecha">${fecha}</div>
             ${d.observacion ? `<b>Observación:</b> ${d.observacion}<br>` : ""}
             ${d.tarea ? `<b>Tarea:</b> ${d.tarea}<br>` : ""}
-            ${d.dolores ? `<b>Dolores:</b> ${d.dolores}<br>` : ""}
-
-            ${d.fechaCompromiso ? `<b>Fecha compromiso:</b> ${d.fechaCompromiso}<br>` : ""}
-
+            ${d.fechaCompromiso ? `<b>Compromiso:</b> ${d.fechaCompromiso}<br>` : ""}
             ${d.urgencia ? `<b>Urgencia:</b> ${d.urgencia}<br>` : ""}
             ${d.importancia ? `<b>Importancia:</b> ${d.importancia}<br>` : ""}
-
-            ${d.anexos ? `<b>Anexos:</b> <a href="${d.anexos}" target="_blank">Ver enlace</a>` : ""}
         `;
 
         lista.appendChild(div);
     });
 }
 
-// EXPORTAR EXCEL
-window.exportarExcel = async function () {
-
-    const select = document.getElementById("proyectoSelect");
-    const proyectoId = select.value;
-    const nombreProyecto = select.options[select.selectedIndex]?.text || "proyecto";
-
-    if (!proyectoId) {
-        alert("Selecciona un proyecto");
-        return;
-    }
-
-    const q = query(
-        collection(db, "bitacora"),
-        where("proyectoId", "==", proyectoId)
-    );
-
-    const snapshot = await getDocs(q);
-
-    let datos = [];
-
-    snapshot.forEach(doc => {
-        const d = doc.data();
-
-        datos.push({
-            Proyecto: nombreProyecto,
-            Fecha: d.fecha?.seconds ? new Date(d.fecha.seconds * 1000).toLocaleString() : "",
-            Observación: d.observacion || "",
-            Tarea: d.tarea || "",
-            Dolores: d.dolores || "",
-            "Fecha Compromiso": d.fechaCompromiso || "",
-            Urgencia: d.urgencia || "",
-            Importancia: d.importancia || "",
-            Anexos: d.anexos || ""
-        });
-    });
-
-    if (datos.length === 0) {
-        alert("No hay datos para exportar");
-        return;
-    }
-
-    const ws = XLSX.utils.json_to_sheet(datos);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Bitacora");
-
-    const nombreArchivo = nombreProyecto
-        .replace(/[^a-zA-Z0-9]/g, "_")
-        .toLowerCase();
-
-    XLSX.writeFile(wb, `${nombreArchivo}_bitacora.xlsx`);
-};
-
+// EVENTO
 document.getElementById("proyectoSelect")
     .addEventListener("change", cargarRegistros);
 
