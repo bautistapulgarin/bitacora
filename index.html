@@ -7,32 +7,21 @@
 
 <style>
 body {
-    margin: 0;
-    padding: 20px;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     background: #0f172a;
     color: #e2e8f0;
+    padding: 20px;
 }
 
 .container {
-    max-width: 700px;
+    max-width: 800px;
     margin: auto;
 }
 
-h1 {
-    text-align: center;
-}
-
-input, textarea, button {
+input, textarea, select, button {
     width: 100%;
     padding: 10px;
     margin-top: 8px;
-    border-radius: 5px;
-    border: none;
-}
-
-textarea {
-    resize: vertical;
 }
 
 button {
@@ -41,15 +30,9 @@ button {
 }
 
 .registro {
+    margin-top: 10px;
+    padding: 10px;
     background: rgba(255,255,255,0.05);
-    margin-top: 12px;
-    padding: 12px;
-    border-radius: 6px;
-}
-
-.fecha {
-    font-size: 12px;
-    color: #94a3b8;
 }
 </style>
 </head>
@@ -57,34 +40,54 @@ button {
 <body>
 
 <div class="container">
-    <h1>Bitácora</h1>
 
-    <input id="grupo" placeholder="Grupo de proyecto (obligatorio)">
-    <textarea id="observacion" placeholder="Observación (opcional)"></textarea>
-    <textarea id="tarea" placeholder="Tarea (opcional)"></textarea>
-    <textarea id="dolores" placeholder="Ampliación de dolores (opcional)"></textarea>
-    <input id="anexos" placeholder="Link de anexos (opcional)">
+<h1>Bitácora</h1>
 
-    <button onclick="guardar()">Guardar registro</button>
+<!-- CREAR PROYECTO -->
+<h3>Crear Proyecto</h3>
+<input id="nuevoProyecto" placeholder="Nombre del proyecto">
+<button onclick="crearProyecto()">Crear proyecto</button>
 
-    <div id="lista"></div>
+<hr>
+
+<!-- SELECCIONAR PROYECTO -->
+<h3>Seleccionar Proyecto</h3>
+<select id="proyectoSelect"></select>
+
+<hr>
+
+<!-- FORMULARIO BITÁCORA -->
+<h3>Nuevo Registro</h3>
+
+<input id="grupo" placeholder="Grupo de proyecto">
+<textarea id="observacion" placeholder="Observación"></textarea>
+<textarea id="tarea" placeholder="Tarea"></textarea>
+<textarea id="dolores" placeholder="Ampliación de dolores"></textarea>
+<input id="anexos" placeholder="Link anexos">
+
+<button onclick="guardarRegistro()">Guardar registro</button>
+
+<hr>
+
+<div id="lista"></div>
+
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    getDocs, 
-    query, 
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    query,
+    where,
     orderBy,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
-// Configuración Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
+    apiKey: "AIzaSy...",
     authDomain: "bitacora-8f4ce.firebaseapp.com",
     projectId: "bitacora-8f4ce",
     storageBucket: "bitacora-8f4ce.firebasestorage.app",
@@ -95,22 +98,61 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Guardar registro
-window.guardar = async function () {
+// =======================
+// CREAR PROYECTO
+// =======================
+window.crearProyecto = async function () {
+    const nombre = document.getElementById("nuevoProyecto").value;
 
-    const grupo = document.getElementById("grupo").value.trim();
-    const observacion = document.getElementById("observacion").value.trim();
-    const tarea = document.getElementById("tarea").value.trim();
-    const dolores = document.getElementById("dolores").value.trim();
-    const anexos = document.getElementById("anexos").value.trim();
+    if (!nombre) return;
 
-    // Validación mínima
-    if (!grupo) {
-        alert("El campo 'Grupo de proyecto' es obligatorio");
+    await addDoc(collection(db, "proyectos"), {
+        nombre,
+        fechaCreacion: serverTimestamp()
+    });
+
+    document.getElementById("nuevoProyecto").value = "";
+    cargarProyectos();
+};
+
+// =======================
+// CARGAR PROYECTOS
+// =======================
+async function cargarProyectos() {
+    const select = document.getElementById("proyectoSelect");
+    select.innerHTML = "";
+
+    const snapshot = await getDocs(collection(db, "proyectos"));
+
+    snapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = doc.data().nombre;
+        select.appendChild(option);
+    });
+
+    cargarRegistros();
+}
+
+// =======================
+// GUARDAR REGISTRO
+// =======================
+window.guardarRegistro = async function () {
+
+    const proyectoId = document.getElementById("proyectoSelect").value;
+    const grupo = document.getElementById("grupo").value;
+    const observacion = document.getElementById("observacion").value;
+    const tarea = document.getElementById("tarea").value;
+    const dolores = document.getElementById("dolores").value;
+    const anexos = document.getElementById("anexos").value;
+
+    if (!proyectoId) {
+        alert("Debes seleccionar un proyecto");
         return;
     }
 
     await addDoc(collection(db, "bitacora"), {
+        proyectoId,
         grupo,
         observacion: observacion || null,
         tarea: tarea || null,
@@ -120,10 +162,12 @@ window.guardar = async function () {
     });
 
     limpiar();
-    cargar();
+    cargarRegistros();
 };
 
-// Limpiar formulario
+// =======================
+// LIMPIAR
+// =======================
 function limpiar() {
     document.getElementById("grupo").value = "";
     document.getElementById("observacion").value = "";
@@ -132,12 +176,24 @@ function limpiar() {
     document.getElementById("anexos").value = "";
 }
 
-// Cargar registros
-async function cargar() {
+// =======================
+// CARGAR REGISTROS POR PROYECTO
+// =======================
+async function cargarRegistros() {
+
     const lista = document.getElementById("lista");
     lista.innerHTML = "";
 
-    const q = query(collection(db, "bitacora"), orderBy("fecha", "desc"));
+    const proyectoId = document.getElementById("proyectoSelect").value;
+
+    if (!proyectoId) return;
+
+    const q = query(
+        collection(db, "bitacora"),
+        where("proyectoId", "==", proyectoId),
+        orderBy("fecha", "desc")
+    );
+
     const snapshot = await getDocs(q);
 
     snapshot.forEach(doc => {
@@ -145,26 +201,28 @@ async function cargar() {
 
         const fecha = d.fecha?.seconds
             ? new Date(d.fecha.seconds * 1000).toLocaleString()
-            : "Sin fecha";
+            : "";
 
         const div = document.createElement("div");
         div.className = "registro";
 
         div.innerHTML = `
-            <div class="fecha">${fecha}</div>
-            <strong>Grupo:</strong> ${d.grupo}<br>
-            ${d.observacion ? `<strong>Observación:</strong> ${d.observacion}<br>` : ""}
-            ${d.tarea ? `<strong>Tarea:</strong> ${d.tarea}<br>` : ""}
-            ${d.dolores ? `<strong>Dolores:</strong> ${d.dolores}<br>` : ""}
-            ${d.anexos ? `<strong>Anexos:</strong> <a href="${d.anexos}" target="_blank">Ver</a>` : ""}
+            <strong>${d.grupo}</strong><br>
+            ${d.observacion || ""}
+            <div style="font-size:12px">${fecha}</div>
         `;
 
         lista.appendChild(div);
     });
 }
 
-// Inicializar
-cargar();
+// =======================
+// EVENTO CAMBIO PROYECTO
+// =======================
+document.getElementById("proyectoSelect").addEventListener("change", cargarRegistros);
+
+// INIT
+cargarProyectos();
 
 </script>
 
