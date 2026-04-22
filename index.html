@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitácora</title>
+
+<!-- TÍTULO EN PESTAÑA -->
+<title>Bitácora v2.0</title>
 
 <style>
 body {
@@ -42,6 +44,18 @@ button {
     font-size: 12px;
     color: #94a3b8;
 }
+
+.titulo {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.version {
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
 </style>
 </head>
 
@@ -49,7 +63,15 @@ button {
 
 <div class="container">
 
-<h1>Bitácora</h1>
+<!-- TÍTULO PRINCIPAL -->
+<div class="titulo">
+    <h1>Bitácora</h1>
+</div>
+
+<!-- VERSIÓN -->
+<div class="version">
+    Versión 2.0
+</div>
 
 <h3>Crear Proyecto</h3>
 <input id="nuevoProyecto" placeholder="Nombre del proyecto">
@@ -59,13 +81,11 @@ button {
 
 <h3>Seleccionar Proyecto</h3>
 <select id="proyectoSelect"></select>
-
 <button onclick="exportarExcel()">Descargar Excel</button>
 
 <hr>
 
 <h3>Nuevo Registro</h3>
-
 <textarea id="observacion" placeholder="Observación"></textarea>
 <textarea id="tarea" placeholder="Tarea"></textarea>
 <textarea id="dolores" placeholder="Ampliación de dolores"></textarea>
@@ -79,7 +99,6 @@ button {
 
 </div>
 
-<!-- SheetJS -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <script type="module">
@@ -96,7 +115,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSy...",
+    apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
     authDomain: "bitacora-8f4ce.firebaseapp.com",
     projectId: "bitacora-8f4ce",
     storageBucket: "bitacora-8f4ce.firebasestorage.app",
@@ -107,9 +126,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// =======================
-// CREAR PROYECTO
-// =======================
 window.crearProyecto = async function () {
     const nombre = document.getElementById("nuevoProyecto").value.trim();
     if (!nombre) return;
@@ -123,9 +139,6 @@ window.crearProyecto = async function () {
     cargarProyectos();
 };
 
-// =======================
-// CARGAR PROYECTOS
-// =======================
 async function cargarProyectos() {
     const select = document.getElementById("proyectoSelect");
     select.innerHTML = "";
@@ -142,9 +155,6 @@ async function cargarProyectos() {
     cargarRegistros();
 }
 
-// =======================
-// GUARDAR REGISTRO
-// =======================
 window.guardarRegistro = async function () {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
@@ -178,9 +188,6 @@ function limpiar() {
     document.getElementById("anexos").value = "";
 }
 
-// =======================
-// CARGAR REGISTROS
-// =======================
 async function cargarRegistros() {
 
     const lista = document.getElementById("lista");
@@ -216,9 +223,6 @@ async function cargarRegistros() {
     });
 }
 
-// =======================
-// EXPORTAR A EXCEL
-// =======================
 window.exportarExcel = async function () {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
@@ -255,14 +259,12 @@ window.exportarExcel = async function () {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Bitacora");
 
-    XLSX.writeFile(wb, "bitacora.xlsx");
+    XLSX.writeFile(wb, "bitacora_v2.xlsx");
 };
 
-// EVENTO CAMBIO PROYECTO
 document.getElementById("proyectoSelect")
     .addEventListener("change", cargarRegistros);
 
-// INIT
 cargarProyectos();
 
 </script>
