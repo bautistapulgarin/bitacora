@@ -1,309 +1,102 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitácora v2.0</title>
-
-<style>
-body {
-    font-family: "Segoe UI", Arial, sans-serif;
-    background: #f5f7fa;
-    color: #1f2937;
-    margin: 0;
-}
-
-.header {
-    background: white;
-    padding: 15px 30px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.version {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.container {
-    max-width: 900px;
-    margin: 30px auto;
-    padding: 0 20px;
-}
-
-.card {
-    background: white;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-}
-
-input, textarea, select {
-    width: 100%;
-    padding: 10px;
-    margin-top: 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-}
-
-button {
-    margin-top: 10px;
-    padding: 10px;
-    background: #065f46;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-button.secondary {
-    background: #e5e7eb;
-    color: #111827;
-}
-
-/* REGISTROS */
-.registro {
-    border-bottom: 1px solid #e5e7eb;
-    padding: 10px;
-    position: relative;
-}
-
-/* ESTADO COMPLETADO */
-.completado {
-    background: #dcfce7;
-    border-left: 4px solid #16a34a;
-}
-
-.fecha {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-/* BOTON CHECK */
-.check-btn {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    background: #e5e7eb;
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-}
-
-.check-btn.activo {
-    background: #16a34a;
-    color: white;
-}
-</style>
-</head>
-
-<body>
-
-<div class="header">
-    <h1>Bitácora</h1>
-    <div id="versionInfo" class="version"></div>
-</div>
-
-<div class="container">
-
-<div class="card">
-    <h3>Crear Proyecto</h3>
-    <input id="nuevoProyecto" placeholder="Nombre del proyecto">
-    <button onclick="crearProyecto()">Crear proyecto</button>
-</div>
-
-<div class="card">
-    <h3>Proyecto</h3>
-    <select id="proyectoSelect"></select>
-    <button class="secondary" onclick="exportarExcel()">Descargar Excel</button>
-</div>
-
-<div class="card">
-    <h3>Nuevo Registro</h3>
-
-    <textarea id="observacion" placeholder="Observación"></textarea>
-    <textarea id="tarea" placeholder="Tarea"></textarea>
-    <textarea id="dolores" placeholder="Ampliación de dolores"></textarea>
-
-    <label>Fecha de compromiso</label>
-    <input type="date" id="fechaCompromiso">
-
-    <label>Urgencia</label>
-    <select id="urgencia">
-        <option value="">Seleccionar</option>
-        <option value="Baja">Baja</option>
-        <option value="Media">Media</option>
-        <option value="Alta">Alta</option>
-    </select>
-
-    <label>Importancia</label>
-    <select id="importancia">
-        <option value="">Seleccionar</option>
-        <option value="Baja">Baja</option>
-        <option value="Media">Media</option>
-        <option value="Alta">Alta</option>
-    </select>
-
-    <input id="anexos" placeholder="Link de anexos">
-
-    <button onclick="guardarRegistro()">Guardar registro</button>
-</div>
-
-<div class="card">
-    <h3>Registros</h3>
-    <div id="lista"></div>
-</div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
-    getFirestore, collection, addDoc, getDocs,
-    query, where, serverTimestamp,
-    updateDoc, doc
+getFirestore, collection, addDoc, getDocs,
+query, where, serverTimestamp, updateDoc, doc
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSy...",
-    authDomain: "bitacora-8f4ce.firebaseapp.com",
-    projectId: "bitacora-8f4ce"
-};
+const app = initializeApp({
+apiKey: "AIzaSy...",
+projectId: "bitacora-8f4ce"
+});
 
-const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// VERSION
-document.getElementById("versionInfo").innerText =
-    "Versión 2.0 | " + new Date().toLocaleString();
+let proyectos = [];
+let proyectoSeleccionado = null;
 
-// CREAR PROYECTO
-window.crearProyecto = async () => {
-    const nombre = document.getElementById("nuevoProyecto").value.trim();
-    if (!nombre) return;
+// 🔴 FUNCIÓN DE PRIORIDAD
+function getPrioridad(d){
 
-    await addDoc(collection(db, "proyectos"), {
-        nombre,
-        fechaCreacion: serverTimestamp()
-    });
+    const u = d.urgencia;
+    const i = d.importancia;
 
-    document.getElementById("nuevoProyecto").value = "";
-    cargarProyectos();
-};
+    if(i === "Alta" && u === "Alta") return 1;
+    if(i === "Alta" && u === "Media") return 2;
+    if(i === "Alta" && u === "Baja") return 3;
 
-// CARGAR PROYECTOS
-async function cargarProyectos() {
-    const select = document.getElementById("proyectoSelect");
-    select.innerHTML = "";
+    if(i === "Media" && u === "Alta") return 4;
+    if(i === "Media" && u === "Media") return 5;
 
-    const snapshot = await getDocs(collection(db, "proyectos"));
+    if(i === "Baja") return 6;
 
-    snapshot.forEach(docSnap => {
-        const option = document.createElement("option");
-        option.value = docSnap.id;
-        option.textContent = docSnap.data().nombre;
-        select.appendChild(option);
-    });
-
-    cargarRegistros();
+    return 7;
 }
-
-// GUARDAR REGISTRO
-window.guardarRegistro = async () => {
-
-    const proyectoId = document.getElementById("proyectoSelect").value;
-
-    await addDoc(collection(db, "bitacora"), {
-        proyectoId,
-        observacion: document.getElementById("observacion").value || null,
-        tarea: document.getElementById("tarea").value || null,
-        dolores: document.getElementById("dolores").value || null,
-        fechaCompromiso: document.getElementById("fechaCompromiso").value || null,
-        urgencia: document.getElementById("urgencia").value || null,
-        importancia: document.getElementById("importancia").value || null,
-        anexos: document.getElementById("anexos").value || null,
-        completado: false,
-        fecha: serverTimestamp()
-    });
-
-    cargarRegistros();
-};
-
-// CAMBIAR ESTADO
-window.toggleCheck = async (id, estadoActual) => {
-    await updateDoc(doc(db, "bitacora", id), {
-        completado: !estadoActual
-    });
-    cargarRegistros();
-};
 
 // CARGAR REGISTROS
-async function cargarRegistros() {
+async function cargarRegistros(){
 
-    const lista = document.getElementById("lista");
-    lista.innerHTML = "Cargando...";
+const lista = document.getElementById("lista");
+lista.innerHTML="Cargando...";
 
-    const proyectoId = document.getElementById("proyectoSelect").value;
-
-    const q = query(
-        collection(db, "bitacora"),
-        where("proyectoId", "==", proyectoId)
-    );
-
-    const snapshot = await getDocs(q);
-
-    let docs = [];
-    snapshot.forEach(docSnap => {
-        docs.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    docs.sort((a, b) => (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0));
-
-    if (docs.length === 0) {
-        lista.innerHTML = "No hay registros";
-        return;
-    }
-
-    lista.innerHTML = "";
-
-    docs.forEach(d => {
-
-        const fecha = d.fecha?.seconds
-            ? new Date(d.fecha.seconds * 1000).toLocaleString()
-            : "";
-
-        const div = document.createElement("div");
-        div.className = "registro";
-
-        if (d.completado) div.classList.add("completado");
-
-        div.innerHTML = `
-            <button class="check-btn ${d.completado ? "activo" : ""}"
-                onclick="toggleCheck('${d.id}', ${d.completado})">✔</button>
-
-            <div class="fecha">${fecha}</div>
-            ${d.observacion ? `<b>Observación:</b> ${d.observacion}<br>` : ""}
-            ${d.tarea ? `<b>Tarea:</b> ${d.tarea}<br>` : ""}
-            ${d.fechaCompromiso ? `<b>Compromiso:</b> ${d.fechaCompromiso}<br>` : ""}
-            ${d.urgencia ? `<b>Urgencia:</b> ${d.urgencia}<br>` : ""}
-            ${d.importancia ? `<b>Importancia:</b> ${d.importancia}<br>` : ""}
-        `;
-
-        lista.appendChild(div);
-    });
+if(!proyectoSeleccionado){
+lista.innerHTML="No hay registros";
+return;
 }
 
-// EVENTO
-document.getElementById("proyectoSelect")
-    .addEventListener("change", cargarRegistros);
+const q = query(
+collection(db,"bitacora"),
+where("proyectoId","==",proyectoSeleccionado.id)
+);
 
-cargarProyectos();
+const snap = await getDocs(q);
 
+let docs=[];
+snap.forEach(d=>docs.push({id:d.id,...d.data()}));
+
+// 🔴 ORDENAMIENTO COMPUESTO
+docs.sort((a,b)=>{
+
+    const pA = getPrioridad(a);
+    const pB = getPrioridad(b);
+
+    // 1. PRIORIDAD
+    if(pA !== pB) return pA - pB;
+
+    // 2. FECHA COMPROMISO
+    if(!a.fechaCompromiso) return 1;
+    if(!b.fechaCompromiso) return -1;
+
+    return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
+});
+
+if(docs.length===0){
+lista.innerHTML="No hay registros";
+return;
+}
+
+lista.innerHTML="";
+
+docs.forEach(d=>{
+
+const div = document.createElement("div");
+div.className="registro";
+if(d.completado) div.classList.add("completado");
+
+// 🔴 ETIQUETA DE PRIORIDAD
+const prioridad = getPrioridad(d);
+
+div.innerHTML=`
+<button onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+
+<b>Prioridad ${prioridad}</b><br>
+<b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
+
+${d.observacion || ""}
+`;
+
+lista.appendChild(div);
+});
+
+}
 </script>
-
-</body>
-</html>
