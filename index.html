@@ -56,7 +56,7 @@ button {
 <div id="versionInfo" class="version"></div>
 
 <h3>Crear Proyecto</h3>
-<input id="nuevoProyecto">
+<input id="nuevoProyecto" placeholder="Nombre del proyecto">
 <button onclick="crearProyecto()">Crear</button>
 
 <hr>
@@ -92,12 +92,11 @@ import {
     getDocs,
     query,
     where,
-    orderBy,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSy...",
+    apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
     authDomain: "bitacora-8f4ce.firebaseapp.com",
     projectId: "bitacora-8f4ce",
     storageBucket: "bitacora-8f4ce.firebasestorage.app",
@@ -108,17 +107,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// =======================
 // VERSION
-// =======================
 document.getElementById("versionInfo").innerText =
     "Versión 2.0 | " + new Date().toLocaleString();
 
-// =======================
 // CREAR PROYECTO
-// =======================
 window.crearProyecto = async () => {
-    const nombre = document.getElementById("nuevoProyecto").value;
+    const nombre = document.getElementById("nuevoProyecto").value.trim();
     if (!nombre) return;
 
     await addDoc(collection(db, "proyectos"), {
@@ -130,9 +125,7 @@ window.crearProyecto = async () => {
     cargarProyectos();
 };
 
-// =======================
 // CARGAR PROYECTOS
-// =======================
 async function cargarProyectos() {
     const select = document.getElementById("proyectoSelect");
     select.innerHTML = "";
@@ -146,13 +139,10 @@ async function cargarProyectos() {
         select.appendChild(option);
     });
 
-    // 🔴 Carga automática del primero
     cargarRegistros();
 }
 
-// =======================
 // GUARDAR REGISTRO
-// =======================
 window.guardarRegistro = async () => {
 
     const proyectoId = document.getElementById("proyectoSelect").value;
@@ -182,9 +172,7 @@ function limpiar() {
     document.getElementById("anexos").value = "";
 }
 
-// =======================
-// CARGAR REGISTROS (CLAVE)
-// =======================
+// CARGAR REGISTROS (SIN ERROR DE ÍNDICE)
 async function cargarRegistros() {
 
     const lista = document.getElementById("lista");
@@ -196,21 +184,27 @@ async function cargarRegistros() {
     try {
         const q = query(
             collection(db, "bitacora"),
-            where("proyectoId", "==", proyectoId),
-            orderBy("fecha", "desc")
+            where("proyectoId", "==", proyectoId)
         );
 
         const snapshot = await getDocs(q);
 
+        let docs = [];
+        snapshot.forEach(doc => docs.push(doc.data()));
+
+        // ORDENAR EN FRONTEND (evita índice)
+        docs.sort((a, b) => {
+            return (b.fecha?.seconds || 0) - (a.fecha?.seconds || 0);
+        });
+
         lista.innerHTML = "";
 
-        if (snapshot.empty) {
+        if (docs.length === 0) {
             lista.innerHTML = "No hay registros para este proyecto";
             return;
         }
 
-        snapshot.forEach(doc => {
-            const d = doc.data();
+        docs.forEach(d => {
 
             const fecha = d.fecha?.seconds
                 ? new Date(d.fecha.seconds * 1000).toLocaleString()
@@ -232,11 +226,47 @@ async function cargarRegistros() {
 
     } catch (error) {
         console.error(error);
-        lista.innerHTML = "Error cargando datos (revisa consola F12)";
+        lista.innerHTML = "Error cargando datos. Revisa F12.";
     }
 }
 
-// 🔴 IMPORTANTE: evento de cambio
+// EXPORTAR EXCEL
+window.exportarExcel = async () => {
+
+    const proyectoId = document.getElementById("proyectoSelect").value;
+    if (!proyectoId) return;
+
+    const q = query(
+        collection(db, "bitacora"),
+        where("proyectoId", "==", proyectoId)
+    );
+
+    const snapshot = await getDocs(q);
+
+    let datos = [];
+
+    snapshot.forEach(doc => {
+        const d = doc.data();
+
+        datos.push({
+            Fecha: d.fecha?.seconds
+                ? new Date(d.fecha.seconds * 1000).toLocaleString()
+                : "",
+            Observación: d.observacion || "",
+            Tarea: d.tarea || "",
+            Dolores: d.dolores || "",
+            Anexos: d.anexos || ""
+        });
+    });
+
+    const ws = XLSX.utils.json_to_sheet(datos);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Bitacora");
+
+    XLSX.writeFile(wb, "bitacora_v2.xlsx");
+};
+
+// EVENTO CAMBIO
 document.getElementById("proyectoSelect")
     .addEventListener("change", cargarRegistros);
 
