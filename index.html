@@ -1,53 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitácora</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitácora</title>
 
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
-        }
+<style>
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+}
 
-        h1 {
-            text-align: center;
-        }
+.container {
+    max-width: 700px;
+    margin: auto;
+}
 
-        .container {
-            max-width: 600px;
-            margin: auto;
-        }
+h1 {
+    text-align: center;
+}
 
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 8px;
-            border-radius: 5px;
-            border: none;
-        }
+input, textarea, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 5px;
+    border: none;
+}
 
-        button {
-            background: #22c55e;
-            cursor: pointer;
-        }
+textarea {
+    resize: vertical;
+}
 
-        .registro {
-            background: rgba(255,255,255,0.05);
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 5px;
-        }
+button {
+    background: #22c55e;
+    cursor: pointer;
+}
 
-        .fecha {
-            font-size: 12px;
-            color: #94a3b8;
-        }
-    </style>
+.registro {
+    background: rgba(255,255,255,0.05);
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.fecha {
+    font-size: 12px;
+    color: #94a3b8;
+}
+</style>
 </head>
 
 <body>
@@ -55,82 +59,112 @@
 <div class="container">
     <h1>Bitácora</h1>
 
-    <input id="descripcion" placeholder="Descripción del registro">
-    <button onclick="guardar()">Guardar</button>
+    <input id="grupo" placeholder="Grupo de proyecto (obligatorio)">
+    <textarea id="observacion" placeholder="Observación (opcional)"></textarea>
+    <textarea id="tarea" placeholder="Tarea (opcional)"></textarea>
+    <textarea id="dolores" placeholder="Ampliación de dolores (opcional)"></textarea>
+    <input id="anexos" placeholder="Link de anexos (opcional)">
+
+    <button onclick="guardar()">Guardar registro</button>
 
     <div id="lista"></div>
 </div>
 
 <script type="module">
-    // Importaciones Firebase (versión modular correcta)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-    import { 
-        getFirestore, 
-        collection, 
-        addDoc, 
-        getDocs, 
-        query, 
-        orderBy 
-    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    getDocs, 
+    query, 
+    orderBy,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
-    // Configuración (la tuya)
-    const firebaseConfig = {
-        apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
-        authDomain: "bitacora-8f4ce.firebaseapp.com",
-        projectId: "bitacora-8f4ce",
-        storageBucket: "bitacora-8f4ce.firebasestorage.app",
-        messagingSenderId: "270773053654",
-        appId: "1:270773053654:web:953528165c86f79e638177"
-    };
+// Configuración Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyCjg6LzOOByPvHGc4aTIl8vtFq7pCzoYSA",
+    authDomain: "bitacora-8f4ce.firebaseapp.com",
+    projectId: "bitacora-8f4ce",
+    storageBucket: "bitacora-8f4ce.firebasestorage.app",
+    messagingSenderId: "270773053654",
+    appId: "1:270773053654:web:953528165c86f79e638177"
+};
 
-    // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    // Guardar datos
-    window.guardar = async function () {
-        const descripcion = document.getElementById("descripcion").value;
+// Guardar registro
+window.guardar = async function () {
 
-        if (!descripcion) return;
+    const grupo = document.getElementById("grupo").value.trim();
+    const observacion = document.getElementById("observacion").value.trim();
+    const tarea = document.getElementById("tarea").value.trim();
+    const dolores = document.getElementById("dolores").value.trim();
+    const anexos = document.getElementById("anexos").value.trim();
 
-        await addDoc(collection(db, "bitacora"), {
-            descripcion: descripcion,
-            fecha: new Date()
-        });
-
-        document.getElementById("descripcion").value = "";
-        cargar();
-    };
-
-    // Cargar datos
-    async function cargar() {
-        const lista = document.getElementById("lista");
-        lista.innerHTML = "";
-
-        const q = query(collection(db, "bitacora"), orderBy("fecha", "desc"));
-        const snapshot = await getDocs(q);
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-
-            const div = document.createElement("div");
-            div.className = "registro";
-
-            const fecha = data.fecha?.seconds
-                ? new Date(data.fecha.seconds * 1000).toLocaleString()
-                : "";
-
-            div.innerHTML = `
-                <strong>${data.descripcion}</strong>
-                <div class="fecha">${fecha}</div>
-            `;
-
-            lista.appendChild(div);
-        });
+    // Validación mínima
+    if (!grupo) {
+        alert("El campo 'Grupo de proyecto' es obligatorio");
+        return;
     }
 
-    // Inicializar carga
+    await addDoc(collection(db, "bitacora"), {
+        grupo,
+        observacion: observacion || null,
+        tarea: tarea || null,
+        dolores: dolores || null,
+        anexos: anexos || null,
+        fecha: serverTimestamp()
+    });
+
+    limpiar();
     cargar();
+};
+
+// Limpiar formulario
+function limpiar() {
+    document.getElementById("grupo").value = "";
+    document.getElementById("observacion").value = "";
+    document.getElementById("tarea").value = "";
+    document.getElementById("dolores").value = "";
+    document.getElementById("anexos").value = "";
+}
+
+// Cargar registros
+async function cargar() {
+    const lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    const q = query(collection(db, "bitacora"), orderBy("fecha", "desc"));
+    const snapshot = await getDocs(q);
+
+    snapshot.forEach(doc => {
+        const d = doc.data();
+
+        const fecha = d.fecha?.seconds
+            ? new Date(d.fecha.seconds * 1000).toLocaleString()
+            : "Sin fecha";
+
+        const div = document.createElement("div");
+        div.className = "registro";
+
+        div.innerHTML = `
+            <div class="fecha">${fecha}</div>
+            <strong>Grupo:</strong> ${d.grupo}<br>
+            ${d.observacion ? `<strong>Observación:</strong> ${d.observacion}<br>` : ""}
+            ${d.tarea ? `<strong>Tarea:</strong> ${d.tarea}<br>` : ""}
+            ${d.dolores ? `<strong>Dolores:</strong> ${d.dolores}<br>` : ""}
+            ${d.anexos ? `<strong>Anexos:</strong> <a href="${d.anexos}" target="_blank">Ver</a>` : ""}
+        `;
+
+        lista.appendChild(div);
+    });
+}
+
+// Inicializar
+cargar();
 
 </script>
 
