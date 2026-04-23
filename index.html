@@ -177,6 +177,81 @@ button:active {
     padding: 40px;
     color: #9ca3af;
 }
+
+/* Estilos para el selector de proyecto con búsqueda */
+.proyecto-selector-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.proyecto-search-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.proyecto-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    margin-top: 4px;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.proyecto-option {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.proyecto-option:hover {
+    background: #f3f4f6;
+}
+
+.proyecto-option.seleccionado {
+    background: #e0f2fe;
+    font-weight: bold;
+}
+
+.proyecto-seleccionado-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.proyecto-seleccionado-display:hover {
+    background: #f3f4f6;
+}
+
+.limpiar-seleccion {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 18px;
+    margin: 0;
+    padding: 0 5px;
+}
+
+.limpiar-seleccion:hover {
+    color: #dc2626;
+    transform: none;
+}
 </style>
 </head>
 
@@ -195,7 +270,7 @@ button:active {
 </div>
 
 <div class="card">
-<h3>Seleccionar Proyectos</h3>
+<h3>Seleccionar Proyectos para Visualizar</h3>
 <input id="busquedaProyecto" placeholder="Buscar proyecto...">
 <div id="listaProyectos" class="lista-proyectos"></div>
 <div class="filtros-acciones">
@@ -209,9 +284,14 @@ button:active {
 <div class="card">
 <h3>Nuevo Registro</h3>
 <label>Seleccionar Proyecto</label>
-<select id="selectorProyectoNuevo">
-    <option value="">-- Selecciona un proyecto --</option>
-</select>
+<div class="proyecto-selector-container">
+    <input type="text" id="busquedaProyectoNuevo" class="proyecto-search-input" placeholder="Buscar proyecto...">
+    <div id="dropdownProyectos" class="proyecto-dropdown" style="display: none;"></div>
+    <div id="proyectoSeleccionadoDisplay" class="proyecto-seleccionado-display" style="display: none;">
+        <span id="proyectoSeleccionadoNombre"></span>
+        <button class="limpiar-seleccion" onclick="limpiarSeleccionProyecto()">✕</button>
+    </div>
+</div>
 
 <textarea id="observacion" placeholder="Observación"></textarea>
 <textarea id="tarea" placeholder="Tarea"></textarea>
@@ -276,6 +356,7 @@ const db = getFirestore(app);
 let proyectos = [];
 let proyectosSeleccionados = new Map(); // Map de id -> objeto proyecto
 let registrosDeProyectos = []; // Todos los registros de proyectos seleccionados
+let proyectoSeleccionadoNuevo = null; // Para el nuevo registro
 
 // PRIORIDAD
 function getPrioridad(d){
@@ -314,7 +395,7 @@ const snap = await getDocs(collection(db,"proyectos"));
 proyectos=[];
 snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
 renderProyectos(proyectos);
-actualizarSelectorProyectos();
+actualizarDropdownProyectos();
 }
 
 // RENDER PROYECTOS CON CHECKBOX
@@ -346,7 +427,7 @@ checkbox.onchange = (e) => {
     }
     actualizarResumen();
     cargarRegistrosMultiples();
-    renderProyectos(proyectos); // Re-render para actualizar estilos
+    renderProyectos(proyectos);
 };
 
 const label = document.createElement("label");
@@ -400,19 +481,88 @@ actualizarResumen();
 renderProyectos(proyectos);
 };
 
-// ACTUALIZAR SELECTOR PARA NUEVO REGISTRO
-function actualizarSelectorProyectos(){
-const selector = document.getElementById("selectorProyectoNuevo");
-selector.innerHTML = '<option value="">-- Selecciona un proyecto --</option>';
+// ACTUALIZAR DROPDOWN PARA NUEVO REGISTRO
+function actualizarDropdownProyectos(){
+const dropdown = document.getElementById("dropdownProyectos");
+dropdown.innerHTML = "";
+
+if(proyectos.length === 0){
+    const div = document.createElement("div");
+    div.className = "proyecto-option";
+    div.textContent = "No hay proyectos disponibles";
+    dropdown.appendChild(div);
+    return;
+}
+
 proyectos.forEach(p => {
-    const option = document.createElement("option");
-    option.value = p.id;
-    option.textContent = p.nombre;
-    selector.appendChild(option);
+    const div = document.createElement("div");
+    div.className = "proyecto-option";
+    if(proyectoSeleccionadoNuevo && proyectoSeleccionadoNuevo.id === p.id){
+        div.classList.add("seleccionado");
+    }
+    div.textContent = p.nombre;
+    div.onclick = () => {
+        seleccionarProyectoNuevo(p);
+    };
+    dropdown.appendChild(div);
 });
 }
 
-// BUSCADOR
+// FILTRAR DROPDOWN
+function filtrarDropdownProyectos() {
+const searchText = document.getElementById("busquedaProyectoNuevo").value.toLowerCase();
+const dropdown = document.getElementById("dropdownProyectos");
+const opciones = dropdown.querySelectorAll(".proyecto-option");
+
+opciones.forEach(opcion => {
+    const nombre = opcion.textContent.toLowerCase();
+    if(nombre.includes(searchText)) {
+        opcion.style.display = "block";
+    } else {
+        opcion.style.display = "none";
+    }
+});
+}
+
+// SELECCIONAR PROYECTO PARA NUEVO REGISTRO
+function seleccionarProyectoNuevo(proyecto) {
+proyectoSeleccionadoNuevo = proyecto;
+document.getElementById("proyectoSeleccionadoNombre").textContent = proyecto.nombre;
+document.getElementById("proyectoSeleccionadoDisplay").style.display = "flex";
+document.getElementById("busquedaProyectoNuevo").style.display = "none";
+document.getElementById("dropdownProyectos").style.display = "none";
+document.getElementById("busquedaProyectoNuevo").value = "";
+}
+
+// LIMPIAR SELECCIÓN
+window.limpiarSeleccionProyecto = () => {
+proyectoSeleccionadoNuevo = null;
+document.getElementById("proyectoSeleccionadoDisplay").style.display = "none";
+document.getElementById("busquedaProyectoNuevo").style.display = "block";
+document.getElementById("busquedaProyectoNuevo").value = "";
+actualizarDropdownProyectos();
+};
+
+// MANEJAR CLICK EN BUSCADOR
+document.getElementById("busquedaProyectoNuevo").addEventListener("focus", () => {
+document.getElementById("dropdownProyectos").style.display = "block";
+actualizarDropdownProyectos();
+});
+
+document.getElementById("busquedaProyectoNuevo").addEventListener("input", () => {
+document.getElementById("dropdownProyectos").style.display = "block";
+filtrarDropdownProyectos();
+});
+
+// CERRAR DROPDOWN AL HACER CLICK FUERA
+document.addEventListener("click", (e) => {
+const container = document.querySelector(".proyecto-selector-container");
+if(container && !container.contains(e.target)) {
+    document.getElementById("dropdownProyectos").style.display = "none";
+}
+});
+
+// BUSCADOR PRINCIPAL
 document.getElementById("busquedaProyecto").addEventListener("input",(e)=>{
 const val=e.target.value.toLowerCase();
 const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
@@ -421,8 +571,7 @@ renderProyectos(filtrados);
 
 // GUARDAR REGISTRO
 window.guardarRegistro = async ()=>{
-const proyectoId = document.getElementById("selectorProyectoNuevo").value;
-if(!proyectoId) {
+if(!proyectoSeleccionadoNuevo) {
     alert("Selecciona un proyecto");
     return;
 }
@@ -435,8 +584,13 @@ const urgencia = document.getElementById("urgencia").value;
 const importancia = document.getElementById("importancia").value;
 const anexos = document.getElementById("anexos").value;
 
+if(!observacion && !tarea && !dolores) {
+    alert("Completa al menos un campo (Observación, Tarea o Dolores)");
+    return;
+}
+
 await addDoc(collection(db,"bitacora"),{
-proyectoId: proyectoId,
+proyectoId: proyectoSeleccionadoNuevo.id,
 observacion: observacion,
 tarea: tarea,
 dolores: dolores,
@@ -457,6 +611,7 @@ document.getElementById("urgencia").value = "";
 document.getElementById("importancia").value = "";
 document.getElementById("anexos").value = "";
 
+// Mantener el mismo proyecto seleccionado
 cargarRegistrosMultiples();
 alert("Registro guardado exitosamente");
 };
@@ -537,7 +692,6 @@ if(docs.length === 0){
 lista.innerHTML="";
 
 docs.forEach(d => {
-    // Obtener nombre del proyecto
     const proyecto = proyectos.find(p => p.id === d.proyectoId);
     const nombreProyecto = proyecto ? proyecto.nombre : "Proyecto no encontrado";
     
@@ -606,7 +760,7 @@ docsParaExportar.sort((a,b)=>{
     return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
 });
 
-// Preparar datos con nombre de proyecto
+// Preparar datos
 const excelData = docsParaExportar.map(registro => {
     const proyecto = proyectos.find(p => p.id === registro.proyectoId);
     return {
@@ -623,19 +777,11 @@ const excelData = docsParaExportar.map(registro => {
     };
 });
 
-// Crear libro de Excel
 const ws = XLSX.utils.json_to_sheet(excelData);
 const colWidths = [
-    {wch:20},  // Proyecto
-    {wch:10},  // Prioridad
-    {wch:15},  // Fecha Compromiso
-    {wch:10},  // Urgencia
-    {wch:10},  // Importancia
-    {wch:40},  // Observación
-    {wch:40},  // Tarea
-    {wch:40},  // Dolores
-    {wch:30},  // Anexos
-    {wch:12}   // Completado
+    {wch:20}, {wch:10}, {wch:15}, {wch:10}, 
+    {wch:10}, {wch:40}, {wch:40}, {wch:40}, 
+    {wch:30}, {wch:12}
 ];
 ws['!cols'] = colWidths;
 
