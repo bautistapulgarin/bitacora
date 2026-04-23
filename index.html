@@ -49,6 +49,23 @@ button {
     cursor: pointer;
 }
 
+.lista-proyectos {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.item-proyecto {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.item-proyecto:hover {
+    background: #e5e7eb;
+}
+
 .registro {
     padding: 12px;
     border-bottom: 1px solid #e5e7eb;
@@ -64,15 +81,21 @@ button {
     position: absolute;
     right: 10px;
     top: 10px;
+    border: none;
+    border-radius: 50%;
     width: 28px;
     height: 28px;
+    cursor: pointer;
 }
 
-.filtros {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 10px;
+.check-btn.activo {
+    background: #16a34a;
+    color: white;
+}
+
+.prioridad {
+    font-weight: bold;
+    font-size: 12px;
 }
 </style>
 </head>
@@ -80,23 +103,59 @@ button {
 <body>
 
 <div class="header">
-<h2>Bitácora v2.0</h2>
+    <h2>Bitácora v2.0</h2>
 </div>
 
 <div class="container">
 
 <div class="card">
-<h3>Filtros</h3>
-
-<div class="filtros">
-<label>
-<input type="checkbox" id="filtroCompletados">
- Solo completados
-</label>
-
-<input id="filtroTarea" placeholder="Buscar en tarea...">
+<h3>Crear Proyecto</h3>
+<input id="nuevoProyecto">
+<button onclick="crearProyecto()">Crear</button>
 </div>
 
+<div class="card">
+<h3>Seleccionar Proyecto</h3>
+<input id="busquedaProyecto" placeholder="Buscar proyecto...">
+<div id="listaProyectos" class="lista-proyectos"></div>
+<button onclick="exportarExcel()">Descargar Excel</button>
+</div>
+
+<div class="card">
+<h3>Nuevo Registro</h3>
+
+<textarea id="observacion" placeholder="Observación"></textarea>
+<textarea id="tarea" placeholder="Tarea"></textarea>
+<textarea id="dolores" placeholder="Dolores"></textarea>
+
+<label>Fecha compromiso</label>
+<input type="date" id="fechaCompromiso">
+
+<label>Urgencia</label>
+<select id="urgencia">
+<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+</select>
+
+<label>Importancia</label>
+<select id="importancia">
+<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+</select>
+
+<input id="anexos" placeholder="Anexos">
+
+<button onclick="guardarRegistro()">Guardar</button>
+</div>
+
+<!-- 🔴 NUEVO BLOQUE DE FILTROS -->
+<div class="card">
+<h3>Filtros</h3>
+
+<label>
+<input type="checkbox" id="filtroCompletados">
+ Mostrar solo completados
+</label>
+
+<input id="filtroTarea" placeholder="Filtrar por tarea...">
 </div>
 
 <div class="card">
@@ -106,11 +165,13 @@ button {
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
-getFirestore, collection, getDocs,
-query, where, updateDoc, doc
+getFirestore, collection, addDoc, getDocs,
+query, where, serverTimestamp, updateDoc, doc
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const app = initializeApp({
@@ -120,50 +181,141 @@ projectId: "bitacora-8f4ce"
 
 const db = getFirestore(app);
 
-let registrosCache = []; // 🔴 cache local
+let proyectos = [];
+let proyectoSeleccionado = null;
+let registrosActuales = []; // 🔴 cache
 
+// PRIORIDAD
 function getPrioridad(d){
-if(d.importancia==="Alta" && d.urgencia==="Alta") return 1;
-if(d.importancia==="Alta" && d.urgencia==="Media") return 2;
-if(d.importancia==="Alta" && d.urgencia==="Baja") return 3;
-if(d.importancia==="Media" && d.urgencia==="Alta") return 4;
-if(d.importancia==="Media" && d.urgencia==="Media") return 5;
-if(d.importancia==="Baja") return 6;
-return 7;
+    const u = d.urgencia;
+    const i = d.importancia;
+
+    if(i==="Alta" && u==="Alta") return 1;
+    if(i==="Alta" && u==="Media") return 2;
+    if(i==="Alta" && u==="Baja") return 3;
+    if(i==="Media" && u==="Alta") return 4;
+    if(i==="Media" && u==="Media") return 5;
+    if(i==="Baja") return 6;
+    return 7;
 }
 
-// 🔴 CARGAR DATOS UNA VEZ
+// CREAR PROYECTO
+window.crearProyecto = async ()=>{
+const nombre = nuevoProyecto.value.trim();
+if(!nombre) return;
+
+await addDoc(collection(db,"proyectos"),{
+    nombre,
+    fechaCreacion: serverTimestamp()
+});
+
+nuevoProyecto.value="";
+cargarProyectos();
+};
+
+// CARGAR PROYECTOS
+async function cargarProyectos(){
+const snap = await getDocs(collection(db,"proyectos"));
+proyectos=[];
+snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
+renderProyectos(proyectos);
+}
+
+// RENDER PROYECTOS
+function renderProyectos(lista){
+const cont = document.getElementById("listaProyectos");
+cont.innerHTML="";
+
+lista.forEach(p=>{
+const div=document.createElement("div");
+div.className="item-proyecto";
+div.textContent=p.nombre;
+
+div.onclick=()=>{
+proyectoSeleccionado=p;
+busquedaProyecto.value=p.nombre;
+cont.innerHTML="";
+cargarRegistros();
+};
+
+cont.appendChild(div);
+});
+}
+
+// BUSCADOR
+busquedaProyecto.addEventListener("input",(e)=>{
+const val=e.target.value.toLowerCase();
+renderProyectos(proyectos.filter(p=>p.nombre.toLowerCase().includes(val)));
+});
+
+// GUARDAR
+window.guardarRegistro = async ()=>{
+if(!proyectoSeleccionado) return;
+
+await addDoc(collection(db,"bitacora"),{
+proyectoId:proyectoSeleccionado.id,
+observacion:observacion.value,
+tarea:tarea.value,
+dolores:dolores.value,
+fechaCompromiso:fechaCompromiso.value||null,
+urgencia:urgencia.value,
+importancia:importancia.value,
+anexos:anexos.value,
+completado:false,
+fecha:serverTimestamp()
+});
+
+cargarRegistros();
+};
+
+// CHECK
+window.toggleCheck = async(id,estado)=>{
+await updateDoc(doc(db,"bitacora",id),{
+completado:!estado
+});
+cargarRegistros();
+};
+
+// CARGAR REGISTROS
 async function cargarRegistros(){
 
-const q=query(collection(db,"bitacora"));
+const lista = document.getElementById("lista");
+lista.innerHTML="Cargando...";
+
+if(!proyectoSeleccionado){
+lista.innerHTML="No hay registros";
+return;
+}
+
+const q=query(collection(db,"bitacora"),
+where("proyectoId","==",proyectoSeleccionado.id));
+
 const snap=await getDocs(q);
 
-registrosCache=[];
-snap.forEach(d=>registrosCache.push({id:d.id,...d.data()}));
+registrosActuales=[];
+snap.forEach(d=>registrosActuales.push({id:d.id,...d.data()}));
 
 aplicarFiltros();
 }
 
-// 🔴 APLICAR FILTROS
+// 🔴 FILTROS
 function aplicarFiltros(){
 
-let datos=[...registrosCache];
+let docs=[...registrosActuales];
 
-const soloCompletados = document.getElementById("filtroCompletados").checked;
-const textoTarea = document.getElementById("filtroTarea").value.toLowerCase();
+const filtroCheck = document.getElementById("filtroCompletados").checked;
+const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
 
-if(soloCompletados){
-datos = datos.filter(d=>d.completado===true);
+if(filtroCheck){
+docs = docs.filter(d=>d.completado===true);
 }
 
-if(textoTarea){
-datos = datos.filter(d=>
-(d.tarea || "").toLowerCase().includes(textoTarea)
-);
+if(filtroTexto){
+docs = docs.filter(d=>(d.tarea || "").toLowerCase().includes(filtroTexto));
 }
 
-// ORDEN
-datos.sort((a,b)=>{
+// ORDEN ORIGINAL
+docs.sort((a,b)=>{
 const pA=getPrioridad(a);
 const pB=getPrioridad(b);
 if(pA!==pB) return pA-pB;
@@ -174,49 +326,48 @@ if(!b.fechaCompromiso) return -1;
 return new Date(a.fechaCompromiso)-new Date(b.fechaCompromiso);
 });
 
-render(datos);
+renderRegistros(docs);
 }
 
 // 🔴 RENDER
-function render(datos){
+function renderRegistros(docs){
 
-const lista=document.getElementById("lista");
-lista.innerHTML="";
+const lista = document.getElementById("lista");
 
-if(datos.length===0){
+if(docs.length===0){
 lista.innerHTML="No hay registros";
 return;
 }
 
-datos.forEach(d=>{
+lista.innerHTML="";
+
+docs.forEach(d=>{
 const div=document.createElement("div");
 div.className="registro";
-
 if(d.completado) div.classList.add("completado");
 
-div.innerHTML=`
-<button onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+const prioridad=getPrioridad(d);
 
-<b>${d.fechaCompromiso || "Sin fecha"}</b><br>
-${d.tarea || ""}
+div.innerHTML=`
+<button class="check-btn ${d.completado?"activo":""}"
+onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+
+<div class="prioridad">Prioridad ${prioridad}</div>
+
+<b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
+<b>Urgencia:</b> ${d.urgencia || "-"}<br>
+<b>Importancia:</b> ${d.importancia || "-"}<br>
+
+${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
+${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
+${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
+${d.anexos ? `<a href="${d.anexos}" target="_blank">Ver anexos</a>` : ""}
 `;
 
 lista.appendChild(div);
 });
+
 }
-
-// 🔴 CHECK
-window.toggleCheck = async(id,estado)=>{
-await updateDoc(doc(db,"bitacora",id),{
-completado:!estado
-});
-
-// actualizar cache sin recargar todo
-const index = registrosCache.findIndex(r=>r.id===id);
-registrosCache[index].completado = !estado;
-
-aplicarFiltros();
-};
 
 // EVENTOS FILTRO
 document.getElementById("filtroCompletados")
@@ -225,8 +376,7 @@ document.getElementById("filtroCompletados")
 document.getElementById("filtroTarea")
 .addEventListener("input", aplicarFiltros);
 
-// INIT
-cargarRegistros();
+cargarProyectos();
 
 </script>
 
