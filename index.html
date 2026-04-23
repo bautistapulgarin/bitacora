@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitácora v2.0</title>
+<title>Bitácora v2.0 - Múltiples Proyectos</title>
 
 <style>
 body {
@@ -37,6 +37,7 @@ input, textarea, select {
     margin-top: 8px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
+    box-sizing: border-box;
 }
 
 button {
@@ -49,21 +50,51 @@ button {
     cursor: pointer;
 }
 
+button:hover {
+    background: #047857;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
 .lista-proyectos {
-    max-height: 150px;
+    max-height: 200px;
     overflow-y: auto;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     margin-top: 8px;
+    background: white;
 }
 
 .item-proyecto {
-    padding: 8px;
+    padding: 10px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .item-proyecto:hover {
-    background: #e5e7eb;
+    background: #f9fafb;
+}
+
+.item-proyecto input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.item-proyecto label {
+    cursor: pointer;
+    flex: 1;
+    margin: 0;
+}
+
+.proyecto-seleccionado {
+    background: #e0f2fe;
 }
 
 .registro {
@@ -86,6 +117,8 @@ button {
     width: 28px;
     height: 28px;
     cursor: pointer;
+    background: #e5e7eb;
+    color: #6b7280;
 }
 
 .check-btn.activo {
@@ -96,6 +129,53 @@ button {
 .prioridad {
     font-weight: bold;
     font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.proyecto-tag {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-bottom: 5px;
+}
+
+.filtros-acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-secundario {
+    background: #6b7280;
+}
+
+.btn-secundario:hover {
+    background: #4b5563;
+}
+
+.btn-peligro {
+    background: #dc2626;
+}
+
+.btn-peligro:hover {
+    background: #b91c1c;
+}
+
+.resumen {
+    background: #f3f4f6;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #9ca3af;
 }
 </style>
 </head>
@@ -103,26 +183,35 @@ button {
 <body>
 
 <div class="header">
-    <h2>Bitácora v2.0</h2>
+    <h2>Bitácora v2.0 - Múltiples Proyectos</h2>
 </div>
 
 <div class="container">
 
 <div class="card">
 <h3>Crear Proyecto</h3>
-<input id="nuevoProyecto">
-<button onclick="crearProyecto()">Crear</button>
+<input id="nuevoProyecto" placeholder="Nombre del proyecto">
+<button onclick="crearProyecto()">Crear Proyecto</button>
 </div>
 
 <div class="card">
-<h3>Seleccionar Proyecto</h3>
+<h3>Seleccionar Proyectos</h3>
 <input id="busquedaProyecto" placeholder="Buscar proyecto...">
 <div id="listaProyectos" class="lista-proyectos"></div>
-<button onclick="exportarExcel()">Descargar Excel</button>
+<div class="filtros-acciones">
+    <button onclick="seleccionarTodos()" class="btn-secundario" style="flex:1">Seleccionar Todos</button>
+    <button onclick="deseleccionarTodos()" class="btn-secundario" style="flex:1">Deseleccionar Todos</button>
+</div>
+<div id="resumenProyectos" class="resumen"></div>
+<button onclick="exportarExcel()">Descargar Excel (Proyectos Seleccionados)</button>
 </div>
 
 <div class="card">
 <h3>Nuevo Registro</h3>
+<label>Seleccionar Proyecto</label>
+<select id="selectorProyectoNuevo">
+    <option value="">-- Selecciona un proyecto --</option>
+</select>
 
 <textarea id="observacion" placeholder="Observación"></textarea>
 <textarea id="tarea" placeholder="Tarea"></textarea>
@@ -133,32 +222,36 @@ button {
 
 <label>Urgencia</label>
 <select id="urgencia">
-<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+<option value="">Seleccionar</option>
+<option>Baja</option>
+<option>Media</option>
+<option>Alta</option>
 </select>
 
 <label>Importancia</label>
 <select id="importancia">
-<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+<option value="">Seleccionar</option>
+<option>Baja</option>
+<option>Media</option>
+<option>Alta</option>
 </select>
 
-<input id="anexos" placeholder="Anexos">
+<input id="anexos" placeholder="Anexos (URL)">
 
-<button onclick="guardarRegistro()">Guardar</button>
+<button onclick="guardarRegistro()">Guardar Registro</button>
 </div>
 
 <div class="card">
 <h3>Filtros</h3>
-
 <label>
 <input type="checkbox" id="filtroCompletados">
  Mostrar solo completados
 </label>
-
 <input id="filtroTarea" placeholder="Filtrar por tarea...">
 </div>
 
 <div class="card">
-<h3>Registros</h3>
+<h3>Registros de Proyectos Seleccionados</h3>
 <div id="lista"></div>
 </div>
 
@@ -174,15 +267,15 @@ query, where, serverTimestamp, updateDoc, doc
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const app = initializeApp({
-apiKey: "AIzaSy...",
+apiKey: "AIzaSy...", // Reemplaza con tu API key
 projectId: "bitacora-8f4ce"
 });
 
 const db = getFirestore(app);
 
 let proyectos = [];
-let proyectoSeleccionado = null;
-let registrosActuales = [];
+let proyectosSeleccionados = new Map(); // Map de id -> objeto proyecto
+let registrosDeProyectos = []; // Todos los registros de proyectos seleccionados
 
 // PRIORIDAD
 function getPrioridad(d){
@@ -200,15 +293,18 @@ function getPrioridad(d){
 
 // CREAR PROYECTO
 window.crearProyecto = async ()=>{
-const nombre = nuevoProyecto.value.trim();
-if(!nombre) return;
+const nombre = document.getElementById("nuevoProyecto").value.trim();
+if(!nombre) {
+    alert("Ingresa un nombre para el proyecto");
+    return;
+}
 
 await addDoc(collection(db,"proyectos"),{
     nombre,
     fechaCreacion: serverTimestamp()
 });
 
-nuevoProyecto.value="";
+document.getElementById("nuevoProyecto").value="";
 cargarProyectos();
 };
 
@@ -218,205 +314,303 @@ const snap = await getDocs(collection(db,"proyectos"));
 proyectos=[];
 snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
 renderProyectos(proyectos);
+actualizarSelectorProyectos();
 }
 
-// RENDER PROYECTOS
+// RENDER PROYECTOS CON CHECKBOX
 function renderProyectos(lista){
 const cont = document.getElementById("listaProyectos");
 cont.innerHTML="";
 
+if(lista.length === 0){
+    cont.innerHTML = '<div style="padding: 10px; color: #9ca3af;">No hay proyectos</div>';
+    return;
+}
+
 lista.forEach(p=>{
 const div=document.createElement("div");
 div.className="item-proyecto";
-div.textContent=p.nombre;
+if(proyectosSeleccionados.has(p.id)){
+    div.classList.add("proyecto-seleccionado");
+}
 
-div.onclick=()=>{
-proyectoSeleccionado=p;
-busquedaProyecto.value=p.nombre;
-cont.innerHTML="";
-cargarRegistros();
+const checkbox = document.createElement("input");
+checkbox.type = "checkbox";
+checkbox.checked = proyectosSeleccionados.has(p.id);
+checkbox.onchange = (e) => {
+    e.stopPropagation();
+    if(checkbox.checked){
+        proyectosSeleccionados.set(p.id, p);
+    } else {
+        proyectosSeleccionados.delete(p.id);
+    }
+    actualizarResumen();
+    cargarRegistrosMultiples();
+    renderProyectos(proyectos); // Re-render para actualizar estilos
 };
 
+const label = document.createElement("label");
+label.textContent = p.nombre;
+label.onclick = () => {
+    checkbox.checked = !checkbox.checked;
+    if(checkbox.checked){
+        proyectosSeleccionados.set(p.id, p);
+    } else {
+        proyectosSeleccionados.delete(p.id);
+    }
+    actualizarResumen();
+    cargarRegistrosMultiples();
+    renderProyectos(proyectos);
+};
+
+div.appendChild(checkbox);
+div.appendChild(label);
 cont.appendChild(div);
+});
+
+actualizarResumen();
+}
+
+// ACTUALIZAR RESUMEN
+function actualizarResumen(){
+const resumen = document.getElementById("resumenProyectos");
+const count = proyectosSeleccionados.size;
+if(count === 0){
+    resumen.innerHTML = "No hay proyectos seleccionados";
+} else {
+    const nombres = Array.from(proyectosSeleccionados.values()).map(p => p.nombre).join(", ");
+    resumen.innerHTML = `<strong>${count} proyecto(s) seleccionado(s):</strong> ${nombres}`;
+}
+cargarRegistrosMultiples();
+}
+
+// SELECCIONAR TODOS
+window.seleccionarTodos = () => {
+proyectos.forEach(p => {
+    proyectosSeleccionados.set(p.id, p);
+});
+actualizarResumen();
+renderProyectos(proyectos);
+};
+
+// DESELECCIONAR TODOS
+window.deseleccionarTodos = () => {
+proyectosSeleccionados.clear();
+actualizarResumen();
+renderProyectos(proyectos);
+};
+
+// ACTUALIZAR SELECTOR PARA NUEVO REGISTRO
+function actualizarSelectorProyectos(){
+const selector = document.getElementById("selectorProyectoNuevo");
+selector.innerHTML = '<option value="">-- Selecciona un proyecto --</option>';
+proyectos.forEach(p => {
+    const option = document.createElement("option");
+    option.value = p.id;
+    option.textContent = p.nombre;
+    selector.appendChild(option);
 });
 }
 
 // BUSCADOR
-busquedaProyecto.addEventListener("input",(e)=>{
+document.getElementById("busquedaProyecto").addEventListener("input",(e)=>{
 const val=e.target.value.toLowerCase();
-renderProyectos(proyectos.filter(p=>p.nombre.toLowerCase().includes(val)));
+const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
+renderProyectos(filtrados);
 });
 
-// GUARDAR
+// GUARDAR REGISTRO
 window.guardarRegistro = async ()=>{
-if(!proyectoSeleccionado) return;
+const proyectoId = document.getElementById("selectorProyectoNuevo").value;
+if(!proyectoId) {
+    alert("Selecciona un proyecto");
+    return;
+}
+
+const observacion = document.getElementById("observacion").value;
+const tarea = document.getElementById("tarea").value;
+const dolores = document.getElementById("dolores").value;
+const fechaCompromiso = document.getElementById("fechaCompromiso").value;
+const urgencia = document.getElementById("urgencia").value;
+const importancia = document.getElementById("importancia").value;
+const anexos = document.getElementById("anexos").value;
 
 await addDoc(collection(db,"bitacora"),{
-proyectoId:proyectoSeleccionado.id,
-observacion:observacion.value,
-tarea:tarea.value,
-dolores:dolores.value,
-fechaCompromiso:fechaCompromiso.value||null,
-urgencia:urgencia.value,
-importancia:importancia.value,
-anexos:anexos.value,
-completado:false,
-fecha:serverTimestamp()
+proyectoId: proyectoId,
+observacion: observacion,
+tarea: tarea,
+dolores: dolores,
+fechaCompromiso: fechaCompromiso || null,
+urgencia: urgencia,
+importancia: importancia,
+anexos: anexos,
+completado: false,
+fecha: serverTimestamp()
 });
 
 // Limpiar campos
-observacion.value = "";
-tarea.value = "";
-dolores.value = "";
-fechaCompromiso.value = "";
-urgencia.value = "";
-importancia.value = "";
-anexos.value = "";
+document.getElementById("observacion").value = "";
+document.getElementById("tarea").value = "";
+document.getElementById("dolores").value = "";
+document.getElementById("fechaCompromiso").value = "";
+document.getElementById("urgencia").value = "";
+document.getElementById("importancia").value = "";
+document.getElementById("anexos").value = "";
 
-cargarRegistros();
+cargarRegistrosMultiples();
+alert("Registro guardado exitosamente");
 };
 
 // CHECK
-window.toggleCheck = async(id,estado)=>{
+window.toggleCheck = async(id, estado)=>{
 await updateDoc(doc(db,"bitacora",id),{
-completado:!estado
+completado: !estado
 });
-cargarRegistros();
+cargarRegistrosMultiples();
 };
 
-// CARGAR REGISTROS
-async function cargarRegistros(){
-
+// CARGAR REGISTROS DE MÚLTIPLES PROYECTOS
+async function cargarRegistrosMultiples(){
 const lista = document.getElementById("lista");
 lista.innerHTML="Cargando...";
 
-if(!proyectoSeleccionado){
-lista.innerHTML="No hay registros";
-return;
+if(proyectosSeleccionados.size === 0){
+    lista.innerHTML="<div class='empty-state'>No hay proyectos seleccionados</div>";
+    registrosDeProyectos = [];
+    return;
 }
 
-const q=query(collection(db,"bitacora"),
-where("proyectoId","==",proyectoSeleccionado.id));
+const proyectoIds = Array.from(proyectosSeleccionados.keys());
+const todasPromesas = proyectoIds.map(async (proyectoId) => {
+    const q = query(collection(db,"bitacora"), where("proyectoId","==",proyectoId));
+    const snap = await getDocs(q);
+    const registros = [];
+    snap.forEach(d => registros.push({id:d.id, ...d.data(), proyectoId: proyectoId}));
+    return registros;
+});
 
-const snap=await getDocs(q);
+const resultados = await Promise.all(todasPromesas);
+registrosDeProyectos = resultados.flat();
 
-registrosActuales=[];
-snap.forEach(d=>registrosActuales.push({id:d.id,...d.data()}));
-
-aplicarFiltros();
+aplicarFiltrosMultiples();
 }
 
 // FILTROS
-function aplicarFiltros(){
-
-let docs=[...registrosActuales];
+function aplicarFiltrosMultiples(){
+let docs = [...registrosDeProyectos];
 
 const filtroCheck = document.getElementById("filtroCompletados").checked;
 const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
 
 if(filtroCheck){
-docs = docs.filter(d=>d.completado===true);
+    docs = docs.filter(d=>d.completado===true);
 }
 
 if(filtroTexto){
-docs = docs.filter(d=>(d.tarea || "").toLowerCase().includes(filtroTexto));
+    docs = docs.filter(d=>(d.tarea || "").toLowerCase().includes(filtroTexto));
 }
 
-// ORDEN ORIGINAL
+// ORDEN
 docs.sort((a,b)=>{
-const pA=getPrioridad(a);
-const pB=getPrioridad(b);
-if(pA!==pB) return pA-pB;
-
-if(!a.fechaCompromiso) return 1;
-if(!b.fechaCompromiso) return -1;
-
-return new Date(a.fechaCompromiso)-new Date(b.fechaCompromiso);
+    const pA = getPrioridad(a);
+    const pB = getPrioridad(b);
+    if(pA !== pB) return pA - pB;
+    
+    if(!a.fechaCompromiso) return 1;
+    if(!b.fechaCompromiso) return -1;
+    
+    return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
 });
 
-renderRegistros(docs);
+renderRegistrosMultiples(docs);
 }
 
-// RENDER
-function renderRegistros(docs){
-
+// RENDER REGISTROS
+function renderRegistrosMultiples(docs){
 const lista = document.getElementById("lista");
 
-if(docs.length===0){
-lista.innerHTML="No hay registros";
-return;
+if(docs.length === 0){
+    lista.innerHTML="<div class='empty-state'>No hay registros para mostrar</div>";
+    return;
 }
 
 lista.innerHTML="";
 
-docs.forEach(d=>{
-const div=document.createElement("div");
-div.className="registro";
-if(d.completado) div.classList.add("completado");
-
-const prioridad=getPrioridad(d);
-
-div.innerHTML=`
-<button class="check-btn ${d.completado?"activo":""}"
-onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
-
-<div class="prioridad">Prioridad ${prioridad}</div>
-
-<b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
-<b>Urgencia:</b> ${d.urgencia || "-"}<br>
-<b>Importancia:</b> ${d.importancia || "-"}<br>
-
-${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
-${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
-${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
-${d.anexos ? `<a href="${d.anexos}" target="_blank">Ver anexos</a>` : ""}
-`;
-
-lista.appendChild(div);
+docs.forEach(d => {
+    // Obtener nombre del proyecto
+    const proyecto = proyectos.find(p => p.id === d.proyectoId);
+    const nombreProyecto = proyecto ? proyecto.nombre : "Proyecto no encontrado";
+    
+    const div = document.createElement("div");
+    div.className = "registro";
+    if(d.completado) div.classList.add("completado");
+    
+    const prioridad = getPrioridad(d);
+    
+    div.innerHTML = `
+        <button class="check-btn ${d.completado ? "activo" : ""}"
+            onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+        
+        <div class="proyecto-tag">📁 ${nombreProyecto}</div>
+        <div class="prioridad">Prioridad ${prioridad}</div>
+        
+        <b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
+        <b>Urgencia:</b> ${d.urgencia || "-"}<br>
+        <b>Importancia:</b> ${d.importancia || "-"}<br>
+        
+        ${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
+        ${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
+        ${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
+        ${d.anexos ? `<a href="${d.anexos}" target="_blank">🔗 Ver anexos</a>` : ""}
+    `;
+    
+    lista.appendChild(div);
 });
-
 }
 
-// FUNCIÓN PARA EXPORTAR A EXCEL
+// EXPORTAR A EXCEL
 window.exportarExcel = () => {
-    if (!proyectoSeleccionado) {
-        alert("Por favor, selecciona un proyecto primero");
-        return;
-    }
+if(proyectosSeleccionados.size === 0){
+    alert("Por favor, selecciona al menos un proyecto");
+    return;
+}
+
+if(registrosDeProyectos.length === 0){
+    alert("No hay registros para exportar en los proyectos seleccionados");
+    return;
+}
+
+// Aplicar filtros actuales
+let docsParaExportar = [...registrosDeProyectos];
+
+const filtroCheck = document.getElementById("filtroCompletados").checked;
+const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+
+if(filtroCheck){
+    docsParaExportar = docsParaExportar.filter(d => d.completado === true);
+}
+
+if(filtroTexto){
+    docsParaExportar = docsParaExportar.filter(d => (d.tarea || "").toLowerCase().includes(filtroTexto));
+}
+
+// Ordenar
+docsParaExportar.sort((a,b)=>{
+    const pA = getPrioridad(a);
+    const pB = getPrioridad(b);
+    if(pA !== pB) return pA - pB;
     
-    if (registrosActuales.length === 0) {
-        alert("No hay registros para exportar");
-        return;
-    }
+    if(!a.fechaCompromiso) return 1;
+    if(!b.fechaCompromiso) return -1;
     
-    // Aplicar los filtros actuales a los registros para exportar
-    let docsParaExportar = [...registrosActuales];
-    
-    const filtroCheck = document.getElementById("filtroCompletados").checked;
-    const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
-    
-    if (filtroCheck) {
-        docsParaExportar = docsParaExportar.filter(d => d.completado === true);
-    }
-    
-    if (filtroTexto) {
-        docsParaExportar = docsParaExportar.filter(d => (d.tarea || "").toLowerCase().includes(filtroTexto));
-    }
-    
-    // Ordenar igual que en la vista
-    docsParaExportar.sort((a,b)=>{
-        const pA = getPrioridad(a);
-        const pB = getPrioridad(b);
-        if(pA !== pB) return pA - pB;
-        
-        if(!a.fechaCompromiso) return 1;
-        if(!b.fechaCompromiso) return -1;
-        
-        return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
-    });
-    
-    // Preparar datos para Excel
-    const excelData = docsParaExportar.map(registro => ({
+    return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
+});
+
+// Preparar datos con nombre de proyecto
+const excelData = docsParaExportar.map(registro => {
+    const proyecto = proyectos.find(p => p.id === registro.proyectoId);
+    return {
+        'Proyecto': proyecto ? proyecto.nombre : "Desconocido",
         'Prioridad': getPrioridad(registro),
         'Fecha Compromiso': registro.fechaCompromiso || 'Sin fecha',
         'Urgencia': registro.urgencia || '-',
@@ -426,40 +620,39 @@ window.exportarExcel = () => {
         'Dolores': registro.dolores || '',
         'Anexos': registro.anexos || '',
         'Completado': registro.completado ? 'Sí' : 'No'
-    }));
-    
-    // Crear libro de Excel
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    
-    // Ajustar ancho de columnas
-    const colWidths = [
-        {wch:10},  // Prioridad
-        {wch:15},  // Fecha Compromiso
-        {wch:10},  // Urgencia
-        {wch:10},  // Importancia
-        {wch:40},  // Observación
-        {wch:40},  // Tarea
-        {wch:40},  // Dolores
-        {wch:30},  // Anexos
-        {wch:12}   // Completado
-    ];
-    ws['!cols'] = colWidths;
-    
-    const wb = XLSX.utils.book_new();
-    const nombreArchivo = `bitacora_${proyectoSeleccionado.nombre}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
-    XLSX.utils.book_append_sheet(wb, ws, 'Registros');
-    
-    // Descargar archivo
-    XLSX.writeFile(wb, nombreArchivo);
+    };
+});
+
+// Crear libro de Excel
+const ws = XLSX.utils.json_to_sheet(excelData);
+const colWidths = [
+    {wch:20},  // Proyecto
+    {wch:10},  // Prioridad
+    {wch:15},  // Fecha Compromiso
+    {wch:10},  // Urgencia
+    {wch:10},  // Importancia
+    {wch:40},  // Observación
+    {wch:40},  // Tarea
+    {wch:40},  // Dolores
+    {wch:30},  // Anexos
+    {wch:12}   // Completado
+];
+ws['!cols'] = colWidths;
+
+const wb = XLSX.utils.book_new();
+const fecha = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+const nombreArchivo = `bitacora_multiple_${fecha}.xlsx`;
+XLSX.utils.book_append_sheet(wb, ws, 'Registros');
+XLSX.writeFile(wb, nombreArchivo);
+
+alert(`Exportados ${excelData.length} registros`);
 };
 
 // EVENTOS FILTRO
-document.getElementById("filtroCompletados")
-.addEventListener("change", aplicarFiltros);
+document.getElementById("filtroCompletados").addEventListener("change", aplicarFiltrosMultiples);
+document.getElementById("filtroTarea").addEventListener("input", aplicarFiltrosMultiples);
 
-document.getElementById("filtroTarea")
-.addEventListener("input", aplicarFiltros);
-
+// INICIALIZAR
 cargarProyectos();
 
 </script>
