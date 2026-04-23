@@ -49,10 +49,6 @@ button {
     cursor: pointer;
 }
 
-.btn-clear {
-    background: #6b7280;
-}
-
 .lista-proyectos {
     max-height: 150px;
     overflow-y: auto;
@@ -70,10 +66,6 @@ button {
     background: #e5e7eb;
 }
 
-.item-proyecto.activo {
-    background: #d1fae5;
-}
-
 .registro {
     padding: 12px;
     border-bottom: 1px solid #e5e7eb;
@@ -89,8 +81,21 @@ button {
     position: absolute;
     right: 10px;
     top: 10px;
+    border: none;
+    border-radius: 50%;
     width: 28px;
     height: 28px;
+    cursor: pointer;
+}
+
+.check-btn.activo {
+    background: #16a34a;
+    color: white;
+}
+
+.prioridad {
+    font-weight: bold;
+    font-size: 12px;
 }
 </style>
 </head>
@@ -98,21 +103,62 @@ button {
 <body>
 
 <div class="header">
-<h2>Bitácora v2.0</h2>
+    <h2>Bitácora v2.0</h2>
 </div>
 
 <div class="container">
 
 <div class="card">
-<h3>Seleccionar Proyecto</h3>
+<h3>Crear Proyecto</h3>
+<input id="nuevoProyecto">
+<button onclick="crearProyecto()">Crear</button>
+</div>
 
+<div class="card">
+<h3>Seleccionar Proyecto</h3>
 <input id="busquedaProyecto" placeholder="Buscar proyecto...">
 <div id="listaProyectos" class="lista-proyectos"></div>
 
-<button onclick="limpiarSeleccion()" class="btn-clear">
-Deseleccionar proyecto
-</button>
+<!-- 🔴 BOTÓN OPCIONAL -->
+<button onclick="limpiarSeleccion()">Deseleccionar proyecto</button>
 
+<button onclick="exportarExcel()">Descargar Excel</button>
+</div>
+
+<div class="card">
+<h3>Nuevo Registro</h3>
+
+<textarea id="observacion" placeholder="Observación"></textarea>
+<textarea id="tarea" placeholder="Tarea"></textarea>
+<textarea id="dolores" placeholder="Dolores"></textarea>
+
+<label>Fecha compromiso</label>
+<input type="date" id="fechaCompromiso">
+
+<label>Urgencia</label>
+<select id="urgencia">
+<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+</select>
+
+<label>Importancia</label>
+<select id="importancia">
+<option></option><option>Baja</option><option>Media</option><option>Alta</option>
+</select>
+
+<input id="anexos" placeholder="Anexos">
+
+<button onclick="guardarRegistro()">Guardar</button>
+</div>
+
+<div class="card">
+<h3>Filtros</h3>
+
+<label>
+<input type="checkbox" id="filtroCompletados">
+ Mostrar solo completados
+</label>
+
+<input id="filtroTarea" placeholder="Filtrar por tarea...">
 </div>
 
 <div class="card">
@@ -122,11 +168,13 @@ Deseleccionar proyecto
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
-getFirestore, collection, getDocs,
-query, where
+getFirestore, collection, addDoc, getDocs,
+query, where, serverTimestamp, updateDoc, doc
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const app = initializeApp({
@@ -138,6 +186,35 @@ const db = getFirestore(app);
 
 let proyectos = [];
 let proyectoSeleccionado = null;
+let registrosActuales = [];
+
+// PRIORIDAD
+function getPrioridad(d){
+    const u = d.urgencia;
+    const i = d.importancia;
+
+    if(i==="Alta" && u==="Alta") return 1;
+    if(i==="Alta" && u==="Media") return 2;
+    if(i==="Alta" && u==="Baja") return 3;
+    if(i==="Media" && u==="Alta") return 4;
+    if(i==="Media" && u==="Media") return 5;
+    if(i==="Baja") return 6;
+    return 7;
+}
+
+// CREAR PROYECTO
+window.crearProyecto = async ()=>{
+const nombre = nuevoProyecto.value.trim();
+if(!nombre) return;
+
+await addDoc(collection(db,"proyectos"),{
+    nombre,
+    fechaCreacion: serverTimestamp()
+});
+
+nuevoProyecto.value="";
+cargarProyectos();
+};
 
 // CARGAR PROYECTOS
 async function cargarProyectos(){
@@ -147,7 +224,7 @@ snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
 renderProyectos(proyectos);
 }
 
-// RENDER
+// 🔴 RENDER (CON DESELECCIÓN)
 function renderProyectos(lista){
 const cont = document.getElementById("listaProyectos");
 cont.innerHTML="";
@@ -155,28 +232,22 @@ cont.innerHTML="";
 lista.forEach(p=>{
 const div=document.createElement("div");
 div.className="item-proyecto";
-
-// 🔴 marcar activo
-if(proyectoSeleccionado && proyectoSeleccionado.id === p.id){
-div.classList.add("activo");
-}
-
 div.textContent=p.nombre;
 
-// 🔴 TOGGLE SELECCIÓN
 div.onclick=()=>{
 
-// si ya está seleccionado → deselecciona
+// 🔴 DESELECCIONAR SI YA ESTÁ ACTIVO
 if(proyectoSeleccionado && proyectoSeleccionado.id === p.id){
-limpiarSeleccion();
+proyectoSeleccionado = null;
+busquedaProyecto.value = "";
+document.getElementById("lista").innerHTML = "No hay registros";
 return;
 }
 
-// seleccionar nuevo
-proyectoSeleccionado = p;
-busquedaProyecto.value = p.nombre;
-
-renderProyectos(proyectos);
+// 🔴 SELECCIONAR
+proyectoSeleccionado=p;
+busquedaProyecto.value=p.nombre;
+cont.innerHTML="";
 cargarRegistros();
 };
 
@@ -184,12 +255,11 @@ cont.appendChild(div);
 });
 }
 
-// 🔴 LIMPIAR SELECCIÓN
+// 🔴 LIMPIAR
 window.limpiarSeleccion = ()=>{
 proyectoSeleccionado = null;
 busquedaProyecto.value = "";
 document.getElementById("lista").innerHTML = "No hay registros";
-renderProyectos(proyectos);
 };
 
 // BUSCADOR
@@ -198,25 +268,90 @@ const val=e.target.value.toLowerCase();
 renderProyectos(proyectos.filter(p=>p.nombre.toLowerCase().includes(val)));
 });
 
+// GUARDAR
+window.guardarRegistro = async ()=>{
+if(!proyectoSeleccionado) return;
+
+await addDoc(collection(db,"bitacora"),{
+proyectoId:proyectoSeleccionado.id,
+observacion:observacion.value,
+tarea:tarea.value,
+dolores:dolores.value,
+fechaCompromiso:fechaCompromiso.value||null,
+urgencia:urgencia.value,
+importancia:importancia.value,
+anexos:anexos.value,
+completado:false,
+fecha:serverTimestamp()
+});
+
+cargarRegistros();
+};
+
+// CHECK
+window.toggleCheck = async(id,estado)=>{
+await updateDoc(doc(db,"bitacora",id),{
+completado:!estado
+});
+cargarRegistros();
+};
+
 // CARGAR REGISTROS
 async function cargarRegistros(){
 
 const lista = document.getElementById("lista");
+lista.innerHTML="Cargando...";
 
 if(!proyectoSeleccionado){
 lista.innerHTML="No hay registros";
 return;
 }
 
-const q=query(
-collection(db,"bitacora"),
-where("proyectoId","==",proyectoSeleccionado.id)
-);
+const q=query(collection(db,"bitacora"),
+where("proyectoId","==",proyectoSeleccionado.id));
 
 const snap=await getDocs(q);
 
-let docs=[];
-snap.forEach(d=>docs.push(d.data()));
+registrosActuales=[];
+snap.forEach(d=>registrosActuales.push({id:d.id,...d.data()}));
+
+aplicarFiltros();
+}
+
+// FILTROS
+function aplicarFiltros(){
+
+let docs=[...registrosActuales];
+
+const filtroCheck = document.getElementById("filtroCompletados").checked;
+const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+
+if(filtroCheck){
+docs = docs.filter(d=>d.completado===true);
+}
+
+if(filtroTexto){
+docs = docs.filter(d=>(d.tarea || "").toLowerCase().includes(filtroTexto));
+}
+
+docs.sort((a,b)=>{
+const pA=getPrioridad(a);
+const pB=getPrioridad(b);
+if(pA!==pB) return pA-pB;
+
+if(!a.fechaCompromiso) return 1;
+if(!b.fechaCompromiso) return -1;
+
+return new Date(a.fechaCompromiso)-new Date(b.fechaCompromiso);
+});
+
+renderRegistros(docs);
+}
+
+// RENDER REGISTROS
+function renderRegistros(docs){
+
+const lista = document.getElementById("lista");
 
 if(docs.length===0){
 lista.innerHTML="No hay registros";
@@ -230,14 +365,35 @@ const div=document.createElement("div");
 div.className="registro";
 if(d.completado) div.classList.add("completado");
 
+const prioridad=getPrioridad(d);
+
 div.innerHTML=`
-<b>${d.fechaCompromiso || "Sin fecha"}</b><br>
-${d.tarea || ""}
+<button class="check-btn ${d.completado?"activo":""}"
+onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+
+<div class="prioridad">Prioridad ${prioridad}</div>
+
+<b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
+<b>Urgencia:</b> ${d.urgencia || "-"}<br>
+<b>Importancia:</b> ${d.importancia || "-"}<br>
+
+${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
+${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
+${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
+${d.anexos ? `<a href="${d.anexos}" target="_blank">Ver anexos</a>` : ""}
 `;
 
 lista.appendChild(div);
 });
+
 }
+
+// EVENTOS FILTRO
+document.getElementById("filtroCompletados")
+.addEventListener("change", aplicarFiltros);
+
+document.getElementById("filtroTarea")
+.addEventListener("input", aplicarFiltros);
 
 cargarProyectos();
 
