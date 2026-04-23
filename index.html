@@ -67,10 +67,6 @@ button {
     font-weight: bold;
 }
 
-.item-proyecto:hover {
-    background: #e5e7eb;
-}
-
 .registro {
     padding: 12px;
     border-bottom: 1px solid #e5e7eb;
@@ -90,9 +86,10 @@ button {
     height: 28px;
 }
 
-.prioridad {
-    font-size: 12px;
-    font-weight: bold;
+a.link {
+    color: #065f46;
+    text-decoration: underline;
+    font-size: 13px;
 }
 </style>
 </head>
@@ -106,54 +103,12 @@ button {
 <div class="container">
 
 <div class="card">
-<h3>Crear Proyecto</h3>
-<input id="nuevoProyecto">
-<button onclick="crearProyecto()">Crear</button>
-</div>
-
-<div class="card">
 <h3>Seleccionar Proyecto(s)</h3>
 <input id="busquedaProyecto" placeholder="Buscar proyecto...">
 <div id="listaProyectos" class="lista-proyectos"></div>
 
 <button onclick="limpiarSeleccion()">Deseleccionar todos</button>
 <button onclick="exportarExcel()">Descargar Excel</button>
-</div>
-
-<div class="card">
-<h3>Nuevo Registro</h3>
-
-<textarea id="observacion" placeholder="Observación"></textarea>
-<textarea id="tarea" placeholder="Tarea"></textarea>
-<textarea id="dolores" placeholder="Dolores"></textarea>
-
-<label>Fecha compromiso</label>
-<input type="date" id="fechaCompromiso">
-
-<label>Urgencia</label>
-<select id="urgencia">
-<option></option><option>Baja</option><option>Media</option><option>Alta</option>
-</select>
-
-<label>Importancia</label>
-<select id="importancia">
-<option></option><option>Baja</option><option>Media</option><option>Alta</option>
-</select>
-
-<input id="anexos" placeholder="Anexos">
-
-<button onclick="guardarRegistro()">Guardar</button>
-</div>
-
-<div class="card">
-<h3>Filtros</h3>
-
-<label>
-<input type="checkbox" id="filtroCompletados">
- Mostrar solo completados
-</label>
-
-<input id="filtroTarea" placeholder="Filtrar por tarea...">
 </div>
 
 <div class="card">
@@ -168,8 +123,8 @@ button {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
-getFirestore, collection, addDoc, getDocs,
-query, where, serverTimestamp, updateDoc, doc
+getFirestore, collection, getDocs,
+query, where
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const app = initializeApp({
@@ -193,20 +148,6 @@ if(d.importancia==="Media" && d.urgencia==="Media") return 5;
 if(d.importancia==="Baja") return 6;
 return 7;
 }
-
-// CREAR PROYECTO
-window.crearProyecto = async ()=>{
-const nombre = nuevoProyecto.value.trim();
-if(!nombre) return;
-
-await addDoc(collection(db,"proyectos"),{
-nombre,
-fechaCreacion: serverTimestamp()
-});
-
-nuevoProyecto.value="";
-cargarProyectos();
-};
 
 // CARGAR PROYECTOS
 async function cargarProyectos(){
@@ -232,7 +173,6 @@ div.classList.add("activo");
 div.textContent=p.nombre;
 
 div.onclick=()=>{
-
 const existe = proyectosSeleccionados.find(x=>x.id===p.id);
 
 if(existe){
@@ -252,53 +192,16 @@ cont.appendChild(div);
 // LIMPIAR
 window.limpiarSeleccion = ()=>{
 proyectosSeleccionados = [];
-busquedaProyecto.value="";
 document.getElementById("lista").innerHTML="No hay registros";
 renderProyectos(proyectos);
-};
-
-// BUSCADOR
-busquedaProyecto.addEventListener("input",(e)=>{
-const val=e.target.value.toLowerCase();
-renderProyectos(proyectos.filter(p=>p.nombre.toLowerCase().includes(val)));
-});
-
-// GUARDAR
-window.guardarRegistro = async ()=>{
-if(proyectosSeleccionados.length===0) return;
-
-await addDoc(collection(db,"bitacora"),{
-proyectoId:proyectosSeleccionados[0].id, // guarda solo uno (coherente con tu modelo)
-observacion:observacion.value,
-tarea:tarea.value,
-dolores:dolores.value,
-fechaCompromiso:fechaCompromiso.value||null,
-urgencia:urgencia.value,
-importancia:importancia.value,
-anexos:anexos.value,
-completado:false,
-fecha:serverTimestamp()
-});
-
-cargarRegistros();
-};
-
-// CHECK
-window.toggleCheck = async(id,estado)=>{
-await updateDoc(doc(db,"bitacora",id),{
-completado:!estado
-});
-cargarRegistros();
 };
 
 // CARGAR REGISTROS
 async function cargarRegistros(){
 
-const lista=document.getElementById("lista");
-lista.innerHTML="Cargando...";
-
 if(proyectosSeleccionados.length===0){
-lista.innerHTML="No hay registros";
+registrosActuales=[];
+render([]);
 return;
 }
 
@@ -309,45 +212,15 @@ const q=query(collection(db,"bitacora"),
 where("proyectoId","==",p.id));
 
 const snap=await getDocs(q);
-snap.forEach(d=>docs.push({id:d.id,...d.data()}));
+snap.forEach(d=>docs.push({id:d.id,...d.data(), proyecto:p.nombre}));
 }
 
 registrosActuales=docs;
-aplicarFiltros();
+render(docs);
 }
 
-// FILTROS
-function aplicarFiltros(){
-
-let docs=[...registrosActuales];
-
-const filtroCheck=document.getElementById("filtroCompletados").checked;
-const filtroTexto=document.getElementById("filtroTarea").value.toLowerCase();
-
-if(filtroCheck){
-docs=docs.filter(d=>d.completado===true);
-}
-
-if(filtroTexto){
-docs=docs.filter(d=>(d.tarea||"").toLowerCase().includes(filtroTexto));
-}
-
-docs.sort((a,b)=>{
-const pA=getPrioridad(a);
-const pB=getPrioridad(b);
-if(pA!==pB) return pA-pB;
-
-if(!a.fechaCompromiso) return 1;
-if(!b.fechaCompromiso) return -1;
-
-return new Date(a.fechaCompromiso)-new Date(b.fechaCompromiso);
-});
-
-renderRegistros(docs);
-}
-
-// RENDER REGISTROS
-function renderRegistros(docs){
+// 🔴 RENDER CORREGIDO (OBS + ANEXOS)
+function render(docs){
 
 const lista=document.getElementById("lista");
 
@@ -363,32 +236,47 @@ const div=document.createElement("div");
 div.className="registro";
 if(d.completado) div.classList.add("completado");
 
-const prioridad=getPrioridad(d);
-
 div.innerHTML=`
-<button class="check-btn ${d.completado?"activo":""}"
-onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+<b>${d.proyecto}</b><br>
 
-<div class="prioridad">Prioridad ${prioridad}</div>
+${d.observacion ? "<b>Obs:</b> " + d.observacion + "<br>" : ""}
+${d.tarea ? "<b>Tarea:</b> " + d.tarea + "<br>" : ""}
+${d.fechaCompromiso ? "<b>Compromiso:</b> " + d.fechaCompromiso + "<br>" : ""}
+${d.urgencia ? "<b>Urgencia:</b> " + d.urgencia + "<br>" : ""}
+${d.importancia ? "<b>Importancia:</b> " + d.importancia + "<br>" : ""}
 
-<b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
-<b>Urgencia:</b> ${d.urgencia || "-"}<br>
-<b>Importancia:</b> ${d.importancia || "-"}<br>
-
-${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
+${d.anexos ? `<a class="link" href="${d.anexos}" target="_blank">Ver anexos</a>` : ""}
 `;
 
 lista.appendChild(div);
 });
-
 }
 
-// EVENTOS
-document.getElementById("filtroCompletados")
-.addEventListener("change", aplicarFiltros);
+// EXPORTAR EXCEL
+window.exportarExcel = ()=>{
 
-document.getElementById("filtroTarea")
-.addEventListener("input", aplicarFiltros);
+if(registrosActuales.length===0){
+alert("No hay datos");
+return;
+}
+
+let datos = registrosActuales.map(d=>({
+Proyecto: d.proyecto,
+Observacion: d.observacion || "",
+Tarea: d.tarea || "",
+"Fecha Compromiso": d.fechaCompromiso || "",
+Urgencia: d.urgencia || "",
+Importancia: d.importancia || "",
+Anexos: d.anexos || "",
+Estado: d.completado ? "Completado" : "Pendiente"
+}));
+
+const ws = XLSX.utils.json_to_sheet(datos);
+const wb = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb, ws, "Bitacora");
+
+XLSX.writeFile(wb, "bitacora.xlsx");
+};
 
 cargarProyectos();
 
