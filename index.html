@@ -146,7 +146,6 @@ button {
 <button onclick="guardarRegistro()">Guardar</button>
 </div>
 
-<!-- 🔴 NUEVO BLOQUE DE FILTROS -->
 <div class="card">
 <h3>Filtros</h3>
 
@@ -183,7 +182,7 @@ const db = getFirestore(app);
 
 let proyectos = [];
 let proyectoSeleccionado = null;
-let registrosActuales = []; // 🔴 cache
+let registrosActuales = [];
 
 // PRIORIDAD
 function getPrioridad(d){
@@ -265,6 +264,15 @@ completado:false,
 fecha:serverTimestamp()
 });
 
+// Limpiar campos
+observacion.value = "";
+tarea.value = "";
+dolores.value = "";
+fechaCompromiso.value = "";
+urgencia.value = "";
+importancia.value = "";
+anexos.value = "";
+
 cargarRegistros();
 };
 
@@ -298,7 +306,7 @@ snap.forEach(d=>registrosActuales.push({id:d.id,...d.data()}));
 aplicarFiltros();
 }
 
-// 🔴 FILTROS
+// FILTROS
 function aplicarFiltros(){
 
 let docs=[...registrosActuales];
@@ -329,7 +337,7 @@ return new Date(a.fechaCompromiso)-new Date(b.fechaCompromiso);
 renderRegistros(docs);
 }
 
-// 🔴 RENDER
+// RENDER
 function renderRegistros(docs){
 
 const lista = document.getElementById("lista");
@@ -368,6 +376,82 @@ lista.appendChild(div);
 });
 
 }
+
+// FUNCIÓN PARA EXPORTAR A EXCEL
+window.exportarExcel = () => {
+    if (!proyectoSeleccionado) {
+        alert("Por favor, selecciona un proyecto primero");
+        return;
+    }
+    
+    if (registrosActuales.length === 0) {
+        alert("No hay registros para exportar");
+        return;
+    }
+    
+    // Aplicar los filtros actuales a los registros para exportar
+    let docsParaExportar = [...registrosActuales];
+    
+    const filtroCheck = document.getElementById("filtroCompletados").checked;
+    const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+    
+    if (filtroCheck) {
+        docsParaExportar = docsParaExportar.filter(d => d.completado === true);
+    }
+    
+    if (filtroTexto) {
+        docsParaExportar = docsParaExportar.filter(d => (d.tarea || "").toLowerCase().includes(filtroTexto));
+    }
+    
+    // Ordenar igual que en la vista
+    docsParaExportar.sort((a,b)=>{
+        const pA = getPrioridad(a);
+        const pB = getPrioridad(b);
+        if(pA !== pB) return pA - pB;
+        
+        if(!a.fechaCompromiso) return 1;
+        if(!b.fechaCompromiso) return -1;
+        
+        return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
+    });
+    
+    // Preparar datos para Excel
+    const excelData = docsParaExportar.map(registro => ({
+        'Prioridad': getPrioridad(registro),
+        'Fecha Compromiso': registro.fechaCompromiso || 'Sin fecha',
+        'Urgencia': registro.urgencia || '-',
+        'Importancia': registro.importancia || '-',
+        'Observación': registro.observacion || '',
+        'Tarea': registro.tarea || '',
+        'Dolores': registro.dolores || '',
+        'Anexos': registro.anexos || '',
+        'Completado': registro.completado ? 'Sí' : 'No'
+    }));
+    
+    // Crear libro de Excel
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // Ajustar ancho de columnas
+    const colWidths = [
+        {wch:10},  // Prioridad
+        {wch:15},  // Fecha Compromiso
+        {wch:10},  // Urgencia
+        {wch:10},  // Importancia
+        {wch:40},  // Observación
+        {wch:40},  // Tarea
+        {wch:40},  // Dolores
+        {wch:30},  // Anexos
+        {wch:12}   // Completado
+    ];
+    ws['!cols'] = colWidths;
+    
+    const wb = XLSX.utils.book_new();
+    const nombreArchivo = `bitacora_${proyectoSeleccionado.nombre}_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
+    XLSX.utils.book_append_sheet(wb, ws, 'Registros');
+    
+    // Descargar archivo
+    XLSX.writeFile(wb, nombreArchivo);
+};
 
 // EVENTOS FILTRO
 document.getElementById("filtroCompletados")
