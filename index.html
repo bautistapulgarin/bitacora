@@ -62,6 +62,11 @@ button {
     cursor: pointer;
 }
 
+.item-proyecto.activo {
+    background: #dcfce7;
+    font-weight: bold;
+}
+
 .item-proyecto:hover {
     background: #e5e7eb;
 }
@@ -81,21 +86,13 @@ button {
     position: absolute;
     right: 10px;
     top: 10px;
-    border: none;
-    border-radius: 50%;
     width: 28px;
     height: 28px;
-    cursor: pointer;
-}
-
-.check-btn.activo {
-    background: #16a34a;
-    color: white;
 }
 
 .prioridad {
-    font-weight: bold;
     font-size: 12px;
+    font-weight: bold;
 }
 </style>
 </head>
@@ -103,7 +100,7 @@ button {
 <body>
 
 <div class="header">
-    <h2>Bitácora v2.0</h2>
+<h2>Bitácora v2.0</h2>
 </div>
 
 <div class="container">
@@ -115,13 +112,11 @@ button {
 </div>
 
 <div class="card">
-<h3>Seleccionar Proyecto</h3>
+<h3>Seleccionar Proyecto(s)</h3>
 <input id="busquedaProyecto" placeholder="Buscar proyecto...">
 <div id="listaProyectos" class="lista-proyectos"></div>
 
-<!-- 🔴 BOTÓN OPCIONAL -->
-<button onclick="limpiarSeleccion()">Deseleccionar proyecto</button>
-
+<button onclick="limpiarSeleccion()">Deseleccionar todos</button>
 <button onclick="exportarExcel()">Descargar Excel</button>
 </div>
 
@@ -185,21 +180,18 @@ projectId: "bitacora-8f4ce"
 const db = getFirestore(app);
 
 let proyectos = [];
-let proyectoSeleccionado = null;
+let proyectosSeleccionados = [];
 let registrosActuales = [];
 
 // PRIORIDAD
 function getPrioridad(d){
-    const u = d.urgencia;
-    const i = d.importancia;
-
-    if(i==="Alta" && u==="Alta") return 1;
-    if(i==="Alta" && u==="Media") return 2;
-    if(i==="Alta" && u==="Baja") return 3;
-    if(i==="Media" && u==="Alta") return 4;
-    if(i==="Media" && u==="Media") return 5;
-    if(i==="Baja") return 6;
-    return 7;
+if(d.importancia==="Alta" && d.urgencia==="Alta") return 1;
+if(d.importancia==="Alta" && d.urgencia==="Media") return 2;
+if(d.importancia==="Alta" && d.urgencia==="Baja") return 3;
+if(d.importancia==="Media" && d.urgencia==="Alta") return 4;
+if(d.importancia==="Media" && d.urgencia==="Media") return 5;
+if(d.importancia==="Baja") return 6;
+return 7;
 }
 
 // CREAR PROYECTO
@@ -208,8 +200,8 @@ const nombre = nuevoProyecto.value.trim();
 if(!nombre) return;
 
 await addDoc(collection(db,"proyectos"),{
-    nombre,
-    fechaCreacion: serverTimestamp()
+nombre,
+fechaCreacion: serverTimestamp()
 });
 
 nuevoProyecto.value="";
@@ -224,30 +216,32 @@ snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
 renderProyectos(proyectos);
 }
 
-// 🔴 RENDER (CON DESELECCIÓN)
+// RENDER PROYECTOS
 function renderProyectos(lista){
-const cont = document.getElementById("listaProyectos");
+const cont=document.getElementById("listaProyectos");
 cont.innerHTML="";
 
 lista.forEach(p=>{
 const div=document.createElement("div");
 div.className="item-proyecto";
+
+if(proyectosSeleccionados.find(x=>x.id===p.id)){
+div.classList.add("activo");
+}
+
 div.textContent=p.nombre;
 
 div.onclick=()=>{
 
-// 🔴 DESELECCIONAR SI YA ESTÁ ACTIVO
-if(proyectoSeleccionado && proyectoSeleccionado.id === p.id){
-proyectoSeleccionado = null;
-busquedaProyecto.value = "";
-document.getElementById("lista").innerHTML = "No hay registros";
-return;
+const existe = proyectosSeleccionados.find(x=>x.id===p.id);
+
+if(existe){
+proyectosSeleccionados = proyectosSeleccionados.filter(x=>x.id!==p.id);
+}else{
+proyectosSeleccionados.push(p);
 }
 
-// 🔴 SELECCIONAR
-proyectoSeleccionado=p;
-busquedaProyecto.value=p.nombre;
-cont.innerHTML="";
+renderProyectos(proyectos);
 cargarRegistros();
 };
 
@@ -255,11 +249,12 @@ cont.appendChild(div);
 });
 }
 
-// 🔴 LIMPIAR
+// LIMPIAR
 window.limpiarSeleccion = ()=>{
-proyectoSeleccionado = null;
-busquedaProyecto.value = "";
-document.getElementById("lista").innerHTML = "No hay registros";
+proyectosSeleccionados = [];
+busquedaProyecto.value="";
+document.getElementById("lista").innerHTML="No hay registros";
+renderProyectos(proyectos);
 };
 
 // BUSCADOR
@@ -270,10 +265,10 @@ renderProyectos(proyectos.filter(p=>p.nombre.toLowerCase().includes(val)));
 
 // GUARDAR
 window.guardarRegistro = async ()=>{
-if(!proyectoSeleccionado) return;
+if(proyectosSeleccionados.length===0) return;
 
 await addDoc(collection(db,"bitacora"),{
-proyectoId:proyectoSeleccionado.id,
+proyectoId:proyectosSeleccionados[0].id, // guarda solo uno (coherente con tu modelo)
 observacion:observacion.value,
 tarea:tarea.value,
 dolores:dolores.value,
@@ -299,22 +294,25 @@ cargarRegistros();
 // CARGAR REGISTROS
 async function cargarRegistros(){
 
-const lista = document.getElementById("lista");
+const lista=document.getElementById("lista");
 lista.innerHTML="Cargando...";
 
-if(!proyectoSeleccionado){
+if(proyectosSeleccionados.length===0){
 lista.innerHTML="No hay registros";
 return;
 }
 
+let docs=[];
+
+for(const p of proyectosSeleccionados){
 const q=query(collection(db,"bitacora"),
-where("proyectoId","==",proyectoSeleccionado.id));
+where("proyectoId","==",p.id));
 
 const snap=await getDocs(q);
+snap.forEach(d=>docs.push({id:d.id,...d.data()}));
+}
 
-registrosActuales=[];
-snap.forEach(d=>registrosActuales.push({id:d.id,...d.data()}));
-
+registrosActuales=docs;
 aplicarFiltros();
 }
 
@@ -323,15 +321,15 @@ function aplicarFiltros(){
 
 let docs=[...registrosActuales];
 
-const filtroCheck = document.getElementById("filtroCompletados").checked;
-const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+const filtroCheck=document.getElementById("filtroCompletados").checked;
+const filtroTexto=document.getElementById("filtroTarea").value.toLowerCase();
 
 if(filtroCheck){
-docs = docs.filter(d=>d.completado===true);
+docs=docs.filter(d=>d.completado===true);
 }
 
 if(filtroTexto){
-docs = docs.filter(d=>(d.tarea || "").toLowerCase().includes(filtroTexto));
+docs=docs.filter(d=>(d.tarea||"").toLowerCase().includes(filtroTexto));
 }
 
 docs.sort((a,b)=>{
@@ -351,7 +349,7 @@ renderRegistros(docs);
 // RENDER REGISTROS
 function renderRegistros(docs){
 
-const lista = document.getElementById("lista");
+const lista=document.getElementById("lista");
 
 if(docs.length===0){
 lista.innerHTML="No hay registros";
@@ -377,10 +375,7 @@ onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
 <b>Urgencia:</b> ${d.urgencia || "-"}<br>
 <b>Importancia:</b> ${d.importancia || "-"}<br>
 
-${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
 ${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
-${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
-${d.anexos ? `<a href="${d.anexos}" target="_blank">Ver anexos</a>` : ""}
 `;
 
 lista.appendChild(div);
@@ -388,7 +383,7 @@ lista.appendChild(div);
 
 }
 
-// EVENTOS FILTRO
+// EVENTOS
 document.getElementById("filtroCompletados")
 .addEventListener("change", aplicarFiltros);
 
