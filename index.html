@@ -3,9 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitácora v2.0 - Múltiples Proyectos</title>
+<title>Bitácora v3.0 - Múltiples Proyectos + Control Horario</title>
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: "Segoe UI", Arial;
     background: #f5f7fa;
@@ -19,8 +23,49 @@ body {
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1000px;
     margin: 30px auto;
+    padding: 0 15px;
+}
+
+/* PESTAÑAS */
+.tabs-container {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-button {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    transition: all 0.3s ease;
+    margin: 0;
+}
+
+.tab-button:hover {
+    color: #065f46;
+    background: #f9fafb;
+}
+
+.tab-button.activo {
+    color: #065f46;
+    border-bottom-color: #065f46;
+    background: transparent;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.activo {
+    display: block;
 }
 
 .card {
@@ -38,16 +83,18 @@ input, textarea, select {
     border: 1px solid #d1d5db;
     border-radius: 6px;
     box-sizing: border-box;
+    font-family: inherit;
 }
 
 button {
     margin-top: 10px;
-    padding: 10px;
+    padding: 10px 15px;
     background: #065f46;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: 500;
 }
 
 button:hover {
@@ -101,6 +148,10 @@ button:active {
     padding: 12px;
     border-bottom: 1px solid #e5e7eb;
     position: relative;
+    background: white;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #d1d5db;
 }
 
 .completado {
@@ -130,6 +181,10 @@ button:active {
     font-weight: bold;
     font-size: 12px;
     margin-bottom: 5px;
+    display: inline-block;
+    background: #fef3c7;
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 .proyecto-tag {
@@ -139,6 +194,18 @@ button:active {
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 11px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.obra-tag {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-right: 5px;
     margin-bottom: 5px;
 }
 
@@ -146,6 +213,7 @@ button:active {
     display: flex;
     gap: 10px;
     margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 .btn-secundario {
@@ -164,6 +232,14 @@ button:active {
     background: #b91c1c;
 }
 
+.btn-exito {
+    background: #16a34a;
+}
+
+.btn-exito:hover {
+    background: #15803d;
+}
+
 .resumen {
     background: #f3f4f6;
     padding: 10px;
@@ -178,7 +254,6 @@ button:active {
     color: #9ca3af;
 }
 
-/* Estilos para el selector de proyecto con búsqueda */
 .proyecto-selector-container {
     position: relative;
     margin-bottom: 15px;
@@ -252,87 +327,334 @@ button:active {
     color: #dc2626;
     transform: none;
 }
+
+/* Estilos para Control Horario */
+.grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+    .grid-2-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+.registro-horario {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #3b82f6;
+}
+
+.registro-horario.completado {
+    border-left-color: #16a34a;
+    background: #f0fdf4;
+}
+
+.registro-horario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.registro-horario-titulo {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.registro-horario-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 10px;
+}
+
+.tiempo-info {
+    background: #f9fafb;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.tiempo-info.alerta {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.tiempo-info.exito {
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.formulario-horario {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: none;
+}
+
+.formulario-horario.activo {
+    display: block;
+}
+
+.filtro-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .filtro-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+label {
+    display: block;
+    font-weight: 500;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.boton-pequeño {
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-top: 5px;
+    margin-right: 5px;
+}
+
+.tabla-horarios {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 13px;
+}
+
+.tabla-horarios thead {
+    background: #f3f4f6;
+}
+
+.tabla-horarios th {
+    padding: 10px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.tabla-horarios td {
+    padding: 10px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.tabla-horarios tbody tr:hover {
+    background: #f9fafb;
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-proyecto {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.badge-obra {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-estado {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.estado-activo {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.estado-inactivo {
+    color: #6b7280;
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="header">
-    <h2>Bitácora v2.0 - Múltiples Proyectos</h2>
+    <h2>Bitácora v3.0 - Múltiples Proyectos + Control Horario</h2>
 </div>
 
 <div class="container">
 
+<!-- PESTAÑAS -->
+<div class="tabs-container">
+    <button class="tab-button activo" onclick="cambiarPestaña('inicio')">📋 Inicio</button>
+    <button class="tab-button" onclick="cambiarPestaña('registros')">📝 Registros</button>
+    <button class="tab-button" onclick="cambiarPestaña('horarios')">⏱️ Control Horario</button>
+</div>
+
+<!-- PESTAÑA INICIO -->
+<div id="tab-inicio" class="tab-content activo">
+
 <div class="card">
-<h3>Crear Proyecto</h3>
-<input id="nuevoProyecto" placeholder="Nombre del proyecto">
-<button onclick="crearProyecto()">Crear Proyecto</button>
+    <h3>Crear Proyecto</h3>
+    <input id="nuevoProyecto" placeholder="Nombre del proyecto">
+    <button onclick="crearProyecto()">Crear Proyecto</button>
 </div>
 
 <div class="card">
-<h3>Seleccionar Proyectos para Visualizar</h3>
-<input id="busquedaProyecto" placeholder="Buscar proyecto...">
-<div id="listaProyectos" class="lista-proyectos"></div>
-<div class="filtros-acciones">
-    <button onclick="seleccionarTodos()" class="btn-secundario" style="flex:1">Seleccionar Todos</button>
-    <button onclick="deseleccionarTodos()" class="btn-secundario" style="flex:1">Deseleccionar Todos</button>
+    <h3>Seleccionar Proyectos para Visualizar</h3>
+    <input id="busquedaProyecto" placeholder="Buscar proyecto...">
+    <div id="listaProyectos" class="lista-proyectos"></div>
+    <div class="filtros-acciones">
+        <button onclick="seleccionarTodos()" class="btn-secundario" style="flex:1">Seleccionar Todos</button>
+        <button onclick="deseleccionarTodos()" class="btn-secundario" style="flex:1">Deseleccionar Todos</button>
+    </div>
+    <div id="resumenProyectos" class="resumen"></div>
+    <button onclick="exportarExcel()">Descargar Excel (Proyectos Seleccionados)</button>
 </div>
-<div id="resumenProyectos" class="resumen"></div>
-<button onclick="exportarExcel()">Descargar Excel (Proyectos Seleccionados)</button>
+
+</div>
+
+<!-- PESTAÑA REGISTROS -->
+<div id="tab-registros" class="tab-content">
+
+<div class="card">
+    <h3>Nuevo Registro</h3>
+    <label>Seleccionar Proyecto</label>
+    <div class="proyecto-selector-container">
+        <input type="text" id="busquedaProyectoNuevo" class="proyecto-search-input" placeholder="Buscar proyecto...">
+        <div id="dropdownProyectos" class="proyecto-dropdown" style="display: none;"></div>
+        <div id="proyectoSeleccionadoDisplay" class="proyecto-seleccionado-display" style="display: none;">
+            <span id="proyectoSeleccionadoNombre"></span>
+            <button class="limpiar-seleccion" onclick="limpiarSeleccionProyecto()">✕</button>
+        </div>
+    </div>
+
+    <label>Obra de Construcción - Cluster</label>
+    <input id="cluster" placeholder="Ej: Cluster A, Cluster B...">
+    
+    <label>Obra de Construcción - Obra</label>
+    <input id="obra" placeholder="Ej: Cimentación, Estructura, Acabados...">
+
+    <textarea id="observacion" placeholder="Observación"></textarea>
+    <textarea id="tarea" placeholder="Tarea"></textarea>
+    <textarea id="dolores" placeholder="Dolores"></textarea>
+
+    <label>Fecha compromiso</label>
+    <input type="date" id="fechaCompromiso">
+
+    <label>Urgencia</label>
+    <select id="urgencia">
+        <option value="">Seleccionar</option>
+        <option>Baja</option>
+        <option>Media</option>
+        <option>Alta</option>
+    </select>
+
+    <label>Importancia</label>
+    <select id="importancia">
+        <option value="">Seleccionar</option>
+        <option>Baja</option>
+        <option>Media</option>
+        <option>Alta</option>
+    </select>
+
+    <input id="anexos" placeholder="Anexos (URL)">
+
+    <button onclick="guardarRegistro()">Guardar Registro</button>
 </div>
 
 <div class="card">
-<h3>Nuevo Registro</h3>
-<label>Seleccionar Proyecto</label>
-<div class="proyecto-selector-container">
-    <input type="text" id="busquedaProyectoNuevo" class="proyecto-search-input" placeholder="Buscar proyecto...">
-    <div id="dropdownProyectos" class="proyecto-dropdown" style="display: none;"></div>
-    <div id="proyectoSeleccionadoDisplay" class="proyecto-seleccionado-display" style="display: none;">
-        <span id="proyectoSeleccionadoNombre"></span>
-        <button class="limpiar-seleccion" onclick="limpiarSeleccionProyecto()">✕</button>
+    <h3>Filtros</h3>
+    <label>
+        <input type="checkbox" id="filtroCompletados">
+        Mostrar solo completados
+    </label>
+    <input id="filtroTarea" placeholder="Filtrar por tarea...">
+    <input id="filtroObra" placeholder="Filtrar por obra (cluster - obra)...">
+</div>
+
+<div class="card">
+    <h3>Registros de Proyectos Seleccionados</h3>
+    <div id="listaInicio" style="margin-top: 20px;">
+        <div class="empty-state">Selecciona proyectos desde la pestaña Inicio</div>
     </div>
 </div>
 
-<textarea id="observacion" placeholder="Observación"></textarea>
-<textarea id="tarea" placeholder="Tarea"></textarea>
-<textarea id="dolores" placeholder="Dolores"></textarea>
+</div>
 
-<label>Fecha compromiso</label>
-<input type="date" id="fechaCompromiso">
+<!-- PESTAÑA CONTROL HORARIO -->
+<div id="tab-horarios" class="tab-content">
 
-<label>Urgencia</label>
-<select id="urgencia">
-<option value="">Seleccionar</option>
-<option>Baja</option>
-<option>Media</option>
-<option>Alta</option>
-</select>
+<div class="card">
+    <h3>Control de Tiempos</h3>
+    
+    <div class="filtro-row">
+        <div>
+            <label>Filtrar por Proyecto</label>
+            <select id="filtroProyectoHorario">
+                <option value="">Todos los proyectos</option>
+            </select>
+        </div>
+        <div>
+            <label>Filtrar por Tarea</label>
+            <input id="filtroTareaHorario" placeholder="Buscar tarea...">
+        </div>
+        <div>
+            <label>Filtrar por Obra (Cluster - Obra)</label>
+            <input id="filtroObraHorario" placeholder="Buscar obra...">
+        </div>
+    </div>
 
-<label>Importancia</label>
-<select id="importancia">
-<option value="">Seleccionar</option>
-<option>Baja</option>
-<option>Media</option>
-<option>Alta</option>
-</select>
-
-<input id="anexos" placeholder="Anexos (URL)">
-
-<button onclick="guardarRegistro()">Guardar Registro</button>
+    <label>Registros disponibles:</label>
+    <div id="listaRegistrosHorario" style="margin-top: 10px;">
+        <div class="empty-state">No hay registros disponibles</div>
+    </div>
 </div>
 
 <div class="card">
-<h3>Filtros</h3>
-<label>
-<input type="checkbox" id="filtroCompletados">
- Mostrar solo completados
-</label>
-<input id="filtroTarea" placeholder="Filtrar por tarea...">
+    <h3>Trazabilidad de Actividades</h3>
+    <table class="tabla-horarios" id="tablaHorarios">
+        <thead>
+            <tr>
+                <th>Proyecto</th>
+                <th>Tarea</th>
+                <th>Obra</th>
+                <th>Inicio Real</th>
+                <th>Fin Previsto</th>
+                <th>Fin Real</th>
+                <th>Duración Real</th>
+                <th>Variación</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody id="tablaHorariosBody">
+            <tr>
+                <td colspan="9" style="text-align: center; color: #9ca3af;">No hay registros de horarios</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
-<div class="card">
-<h3>Registros de Proyectos Seleccionados</h3>
-<div id="lista"></div>
 </div>
 
 </div>
@@ -347,22 +669,22 @@ query, where, serverTimestamp, updateDoc, doc
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const app = initializeApp({
-apiKey: "AIzaSy...", // Reemplaza con tu API key
+apiKey: "AIzaSy...",
 projectId: "bitacora-8f4ce"
 });
 
 const db = getFirestore(app);
 
 let proyectos = [];
-let proyectosSeleccionados = new Map(); // Map de id -> objeto proyecto
-let registrosDeProyectos = []; // Todos los registros de proyectos seleccionados
-let proyectoSeleccionadoNuevo = null; // Para el nuevo registro
+let proyectosSeleccionados = new Map();
+let registrosDeProyectos = [];
+let horariosRegistrados = [];
+let proyectoSeleccionadoNuevo = null;
 
-// PRIORIDAD
+// ==================== UTILIDADES ====================
 function getPrioridad(d){
     const u = d.urgencia;
     const i = d.importancia;
-
     if(i==="Alta" && u==="Alta") return 1;
     if(i==="Alta" && u==="Media") return 2;
     if(i==="Alta" && u==="Baja") return 3;
@@ -372,433 +694,680 @@ function getPrioridad(d){
     return 7;
 }
 
-// CREAR PROYECTO
+function formatearFechaHora(dateTimeString) {
+    if (!dateTimeString) return "-";
+    const dt = new Date(dateTimeString);
+    return dt.toLocaleString('es-ES');
+}
+
+function calcularDiferenciaTiempos(finPrevisto, finReal) {
+    if (!finPrevisto || !finReal) return null;
+    const previsto = new Date(finPrevisto).getTime();
+    const real = new Date(finReal).getTime();
+    const diferencia = real - previsto;
+    const horas = Math.floor(Math.abs(diferencia) / 3600000);
+    const minutos = Math.floor((Math.abs(diferencia) % 3600000) / 60000);
+    const signo = diferencia > 0 ? '+' : '-';
+    return { horas, minutos, signo, esRetraso: diferencia > 0 };
+}
+
+function calcularDuracionReal(inicio, fin) {
+    if (!inicio || !fin) return null;
+    const inicioTime = new Date(inicio).getTime();
+    const finTime = new Date(fin).getTime();
+    const duracion = finTime - inicioTime;
+    const horas = Math.floor(duracion / 3600000);
+    const minutos = Math.floor((duracion % 3600000) / 60000);
+    return { horas, minutos };
+}
+
+// ==================== CAMBIO DE PESTAÑAS ====================
+window.cambiarPestaña = (pestanya) => {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('activo'));
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('activo'));
+    
+    document.getElementById(`tab-${pestanya}`).classList.add('activo');
+    event.target.classList.add('activo');
+    
+    if (pestanya === 'horarios') {
+        cargarHorarios();
+    } else if (pestanya === 'registros') {
+        cargarRegistrosMultiples();
+    }
+};
+
+// ==================== GESTIÓN DE PROYECTOS ====================
 window.crearProyecto = async ()=>{
-const nombre = document.getElementById("nuevoProyecto").value.trim();
-if(!nombre) {
-    alert("Ingresa un nombre para el proyecto");
-    return;
-}
-
-await addDoc(collection(db,"proyectos"),{
-    nombre,
-    fechaCreacion: serverTimestamp()
-});
-
-document.getElementById("nuevoProyecto").value="";
-cargarProyectos();
+    const nombre = document.getElementById("nuevoProyecto").value.trim();
+    if(!nombre) {
+        alert("Ingresa un nombre para el proyecto");
+        return;
+    }
+    await addDoc(collection(db,"proyectos"),{
+        nombre,
+        fechaCreacion: serverTimestamp()
+    });
+    document.getElementById("nuevoProyecto").value="";
+    cargarProyectos();
 };
 
-// CARGAR PROYECTOS
 async function cargarProyectos(){
-const snap = await getDocs(collection(db,"proyectos"));
-proyectos=[];
-snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
-renderProyectos(proyectos);
-actualizarDropdownProyectos();
+    const snap = await getDocs(collection(db,"proyectos"));
+    proyectos=[];
+    snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
+    renderProyectos(proyectos);
+    actualizarDropdownProyectos();
+    actualizarFiltroProyectoHorario();
 }
 
-// RENDER PROYECTOS CON CHECKBOX
 function renderProyectos(lista){
-const cont = document.getElementById("listaProyectos");
-cont.innerHTML="";
-
-if(lista.length === 0){
-    cont.innerHTML = '<div style="padding: 10px; color: #9ca3af;">No hay proyectos</div>';
-    return;
-}
-
-lista.forEach(p=>{
-const div=document.createElement("div");
-div.className="item-proyecto";
-if(proyectosSeleccionados.has(p.id)){
-    div.classList.add("proyecto-seleccionado");
-}
-
-const checkbox = document.createElement("input");
-checkbox.type = "checkbox";
-checkbox.checked = proyectosSeleccionados.has(p.id);
-checkbox.onchange = (e) => {
-    e.stopPropagation();
-    if(checkbox.checked){
-        proyectosSeleccionados.set(p.id, p);
-    } else {
-        proyectosSeleccionados.delete(p.id);
+    const cont = document.getElementById("listaProyectos");
+    cont.innerHTML="";
+    if(lista.length === 0){
+        cont.innerHTML = '<div style="padding: 10px; color: #9ca3af;">No hay proyectos</div>';
+        return;
     }
+    lista.forEach(p=>{
+        const div=document.createElement("div");
+        div.className="item-proyecto";
+        if(proyectosSeleccionados.has(p.id)){
+            div.classList.add("proyecto-seleccionado");
+        }
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = proyectosSeleccionados.has(p.id);
+        checkbox.onchange = (e) => {
+            e.stopPropagation();
+            if(checkbox.checked){
+                proyectosSeleccionados.set(p.id, p);
+            } else {
+                proyectosSeleccionados.delete(p.id);
+            }
+            actualizarResumen();
+            cargarRegistrosMultiples();
+            renderProyectos(proyectos);
+        };
+        const label = document.createElement("label");
+        label.textContent = p.nombre;
+        label.onclick = () => {
+            checkbox.checked = !checkbox.checked;
+            if(checkbox.checked){
+                proyectosSeleccionados.set(p.id, p);
+            } else {
+                proyectosSeleccionados.delete(p.id);
+            }
+            actualizarResumen();
+            cargarRegistrosMultiples();
+            renderProyectos(proyectos);
+        };
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        cont.appendChild(div);
+    });
     actualizarResumen();
-    cargarRegistrosMultiples();
-    renderProyectos(proyectos);
-};
-
-const label = document.createElement("label");
-label.textContent = p.nombre;
-label.onclick = () => {
-    checkbox.checked = !checkbox.checked;
-    if(checkbox.checked){
-        proyectosSeleccionados.set(p.id, p);
-    } else {
-        proyectosSeleccionados.delete(p.id);
-    }
-    actualizarResumen();
-    cargarRegistrosMultiples();
-    renderProyectos(proyectos);
-};
-
-div.appendChild(checkbox);
-div.appendChild(label);
-cont.appendChild(div);
-});
-
-actualizarResumen();
 }
 
-// ACTUALIZAR RESUMEN
 function actualizarResumen(){
-const resumen = document.getElementById("resumenProyectos");
-const count = proyectosSeleccionados.size;
-if(count === 0){
-    resumen.innerHTML = "No hay proyectos seleccionados";
-} else {
-    const nombres = Array.from(proyectosSeleccionados.values()).map(p => p.nombre).join(", ");
-    resumen.innerHTML = `<strong>${count} proyecto(s) seleccionado(s):</strong> ${nombres}`;
-}
-cargarRegistrosMultiples();
-}
-
-// SELECCIONAR TODOS
-window.seleccionarTodos = () => {
-proyectos.forEach(p => {
-    proyectosSeleccionados.set(p.id, p);
-});
-actualizarResumen();
-renderProyectos(proyectos);
-};
-
-// DESELECCIONAR TODOS
-window.deseleccionarTodos = () => {
-proyectosSeleccionados.clear();
-actualizarResumen();
-renderProyectos(proyectos);
-};
-
-// ACTUALIZAR DROPDOWN PARA NUEVO REGISTRO
-function actualizarDropdownProyectos(){
-const dropdown = document.getElementById("dropdownProyectos");
-dropdown.innerHTML = "";
-
-if(proyectos.length === 0){
-    const div = document.createElement("div");
-    div.className = "proyecto-option";
-    div.textContent = "No hay proyectos disponibles";
-    dropdown.appendChild(div);
-    return;
-}
-
-proyectos.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "proyecto-option";
-    if(proyectoSeleccionadoNuevo && proyectoSeleccionadoNuevo.id === p.id){
-        div.classList.add("seleccionado");
-    }
-    div.textContent = p.nombre;
-    div.onclick = () => {
-        seleccionarProyectoNuevo(p);
-    };
-    dropdown.appendChild(div);
-});
-}
-
-// FILTRAR DROPDOWN
-function filtrarDropdownProyectos() {
-const searchText = document.getElementById("busquedaProyectoNuevo").value.toLowerCase();
-const dropdown = document.getElementById("dropdownProyectos");
-const opciones = dropdown.querySelectorAll(".proyecto-option");
-
-opciones.forEach(opcion => {
-    const nombre = opcion.textContent.toLowerCase();
-    if(nombre.includes(searchText)) {
-        opcion.style.display = "block";
+    const resumen = document.getElementById("resumenProyectos");
+    const count = proyectosSeleccionados.size;
+    if(count === 0){
+        resumen.innerHTML = "No hay proyectos seleccionados";
     } else {
-        opcion.style.display = "none";
+        const nombres = Array.from(proyectosSeleccionados.values()).map(p => p.nombre).join(", ");
+        resumen.innerHTML = `<strong>${count} proyecto(s) seleccionado(s):</strong> ${nombres}`;
     }
-});
+    cargarRegistrosMultiples();
 }
 
-// SELECCIONAR PROYECTO PARA NUEVO REGISTRO
-function seleccionarProyectoNuevo(proyecto) {
-proyectoSeleccionadoNuevo = proyecto;
-document.getElementById("proyectoSeleccionadoNombre").textContent = proyecto.nombre;
-document.getElementById("proyectoSeleccionadoDisplay").style.display = "flex";
-document.getElementById("busquedaProyectoNuevo").style.display = "none";
-document.getElementById("dropdownProyectos").style.display = "none";
-document.getElementById("busquedaProyectoNuevo").value = "";
-}
-
-// LIMPIAR SELECCIÓN
-window.limpiarSeleccionProyecto = () => {
-proyectoSeleccionadoNuevo = null;
-document.getElementById("proyectoSeleccionadoDisplay").style.display = "none";
-document.getElementById("busquedaProyectoNuevo").style.display = "block";
-document.getElementById("busquedaProyectoNuevo").value = "";
-actualizarDropdownProyectos();
+window.seleccionarTodos = () => {
+    proyectos.forEach(p => {
+        proyectosSeleccionados.set(p.id, p);
+    });
+    actualizarResumen();
+    renderProyectos(proyectos);
 };
 
-// MANEJAR CLICK EN BUSCADOR
+window.deseleccionarTodos = () => {
+    proyectosSeleccionados.clear();
+    actualizarResumen();
+    renderProyectos(proyectos);
+};
+
+// ==================== SELECTOR PROYECTO NUEVO REGISTRO ====================
+function actualizarDropdownProyectos(){
+    const dropdown = document.getElementById("dropdownProyectos");
+    dropdown.innerHTML = "";
+    if(proyectos.length === 0){
+        const div = document.createElement("div");
+        div.className = "proyecto-option";
+        div.textContent = "No hay proyectos disponibles";
+        dropdown.appendChild(div);
+        return;
+    }
+    proyectos.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "proyecto-option";
+        if(proyectoSeleccionadoNuevo && proyectoSeleccionadoNuevo.id === p.id){
+            div.classList.add("seleccionado");
+        }
+        div.textContent = p.nombre;
+        div.onclick = () => {
+            seleccionarProyectoNuevo(p);
+        };
+        dropdown.appendChild(div);
+    });
+}
+
+function filtrarDropdownProyectos() {
+    const searchText = document.getElementById("busquedaProyectoNuevo").value.toLowerCase();
+    const dropdown = document.getElementById("dropdownProyectos");
+    const opciones = dropdown.querySelectorAll(".proyecto-option");
+    opciones.forEach(opcion => {
+        const nombre = opcion.textContent.toLowerCase();
+        opcion.style.display = nombre.includes(searchText) ? "block" : "none";
+    });
+}
+
+function seleccionarProyectoNuevo(proyecto) {
+    proyectoSeleccionadoNuevo = proyecto;
+    document.getElementById("proyectoSeleccionadoNombre").textContent = proyecto.nombre;
+    document.getElementById("proyectoSeleccionadoDisplay").style.display = "flex";
+    document.getElementById("busquedaProyectoNuevo").style.display = "none";
+    document.getElementById("dropdownProyectos").style.display = "none";
+    document.getElementById("busquedaProyectoNuevo").value = "";
+}
+
+window.limpiarSeleccionProyecto = () => {
+    proyectoSeleccionadoNuevo = null;
+    document.getElementById("proyectoSeleccionadoDisplay").style.display = "none";
+    document.getElementById("busquedaProyectoNuevo").style.display = "block";
+    document.getElementById("busquedaProyectoNuevo").value = "";
+    actualizarDropdownProyectos();
+};
+
 document.getElementById("busquedaProyectoNuevo").addEventListener("focus", () => {
-document.getElementById("dropdownProyectos").style.display = "block";
-actualizarDropdownProyectos();
+    document.getElementById("dropdownProyectos").style.display = "block";
+    actualizarDropdownProyectos();
 });
 
 document.getElementById("busquedaProyectoNuevo").addEventListener("input", () => {
-document.getElementById("dropdownProyectos").style.display = "block";
-filtrarDropdownProyectos();
+    document.getElementById("dropdownProyectos").style.display = "block";
+    filtrarDropdownProyectos();
 });
 
-// CERRAR DROPDOWN AL HACER CLICK FUERA
 document.addEventListener("click", (e) => {
-const container = document.querySelector(".proyecto-selector-container");
-if(container && !container.contains(e.target)) {
-    document.getElementById("dropdownProyectos").style.display = "none";
-}
+    const container = document.querySelector(".proyecto-selector-container");
+    if(container && !container.contains(e.target)) {
+        document.getElementById("dropdownProyectos").style.display = "none";
+    }
 });
 
-// BUSCADOR PRINCIPAL
 document.getElementById("busquedaProyecto").addEventListener("input",(e)=>{
-const val=e.target.value.toLowerCase();
-const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
-renderProyectos(filtrados);
+    const val=e.target.value.toLowerCase();
+    const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
+    renderProyectos(filtrados);
 });
 
-// GUARDAR REGISTRO
+// ==================== GUARDAR REGISTRO ====================
 window.guardarRegistro = async ()=>{
-if(!proyectoSeleccionadoNuevo) {
-    alert("Selecciona un proyecto");
-    return;
-}
+    if(!proyectoSeleccionadoNuevo) {
+        alert("Selecciona un proyecto");
+        return;
+    }
+    const observacion = document.getElementById("observacion").value;
+    const tarea = document.getElementById("tarea").value;
+    const dolores = document.getElementById("dolores").value;
+    const cluster = document.getElementById("cluster").value.trim();
+    const obra = document.getElementById("obra").value.trim();
+    const fechaCompromiso = document.getElementById("fechaCompromiso").value;
+    const urgencia = document.getElementById("urgencia").value;
+    const importancia = document.getElementById("importancia").value;
+    const anexos = document.getElementById("anexos").value;
 
-const observacion = document.getElementById("observacion").value;
-const tarea = document.getElementById("tarea").value;
-const dolores = document.getElementById("dolores").value;
-const fechaCompromiso = document.getElementById("fechaCompromiso").value;
-const urgencia = document.getElementById("urgencia").value;
-const importancia = document.getElementById("importancia").value;
-const anexos = document.getElementById("anexos").value;
+    if(!observacion && !tarea && !dolores) {
+        alert("Completa al menos un campo (Observación, Tarea o Dolores)");
+        return;
+    }
 
-if(!observacion && !tarea && !dolores) {
-    alert("Completa al menos un campo (Observación, Tarea o Dolores)");
-    return;
-}
+    await addDoc(collection(db,"bitacora"),{
+        proyectoId: proyectoSeleccionadoNuevo.id,
+        observacion: observacion,
+        tarea: tarea,
+        dolores: dolores,
+        cluster: cluster,
+        obra: obra,
+        fechaCompromiso: fechaCompromiso || null,
+        urgencia: urgencia,
+        importancia: importancia,
+        anexos: anexos,
+        completado: false,
+        fecha: serverTimestamp()
+    });
 
-await addDoc(collection(db,"bitacora"),{
-proyectoId: proyectoSeleccionadoNuevo.id,
-observacion: observacion,
-tarea: tarea,
-dolores: dolores,
-fechaCompromiso: fechaCompromiso || null,
-urgencia: urgencia,
-importancia: importancia,
-anexos: anexos,
-completado: false,
-fecha: serverTimestamp()
-});
+    document.getElementById("observacion").value = "";
+    document.getElementById("tarea").value = "";
+    document.getElementById("dolores").value = "";
+    document.getElementById("cluster").value = "";
+    document.getElementById("obra").value = "";
+    document.getElementById("fechaCompromiso").value = "";
+    document.getElementById("urgencia").value = "";
+    document.getElementById("importancia").value = "";
+    document.getElementById("anexos").value = "";
 
-// Limpiar campos
-document.getElementById("observacion").value = "";
-document.getElementById("tarea").value = "";
-document.getElementById("dolores").value = "";
-document.getElementById("fechaCompromiso").value = "";
-document.getElementById("urgencia").value = "";
-document.getElementById("importancia").value = "";
-document.getElementById("anexos").value = "";
-
-// Mantener el mismo proyecto seleccionado
-cargarRegistrosMultiples();
-alert("Registro guardado exitosamente");
+    cargarRegistrosMultiples();
+    alert("Registro guardado exitosamente");
 };
 
-// CHECK
+// ==================== TOGGLE CHECK ====================
 window.toggleCheck = async(id, estado)=>{
-await updateDoc(doc(db,"bitacora",id),{
-completado: !estado
-});
-cargarRegistrosMultiples();
+    await updateDoc(doc(db,"bitacora",id),{
+        completado: !estado
+    });
+    cargarRegistrosMultiples();
 };
 
-// CARGAR REGISTROS DE MÚLTIPLES PROYECTOS
+// ==================== CARGAR REGISTROS MÚLTIPLES ====================
 async function cargarRegistrosMultiples(){
-const lista = document.getElementById("lista");
-lista.innerHTML="Cargando...";
+    const lista = document.getElementById("listaInicio");
+    lista.innerHTML="Cargando...";
 
-if(proyectosSeleccionados.size === 0){
-    lista.innerHTML="<div class='empty-state'>No hay proyectos seleccionados</div>";
-    registrosDeProyectos = [];
-    return;
+    if(proyectosSeleccionados.size === 0){
+        lista.innerHTML="<div class='empty-state'>Selecciona proyectos desde la pestaña Inicio</div>";
+        registrosDeProyectos = [];
+        return;
+    }
+
+    const proyectoIds = Array.from(proyectosSeleccionados.keys());
+    const todasPromesas = proyectoIds.map(async (proyectoId) => {
+        const q = query(collection(db,"bitacora"), where("proyectoId","==",proyectoId));
+        const snap = await getDocs(q);
+        const registros = [];
+        snap.forEach(d => registros.push({id:d.id, ...d.data(), proyectoId: proyectoId}));
+        return registros;
+    });
+
+    const resultados = await Promise.all(todasPromesas);
+    registrosDeProyectos = resultados.flat();
+
+    aplicarFiltrosMultiples();
 }
 
-const proyectoIds = Array.from(proyectosSeleccionados.keys());
-const todasPromesas = proyectoIds.map(async (proyectoId) => {
-    const q = query(collection(db,"bitacora"), where("proyectoId","==",proyectoId));
-    const snap = await getDocs(q);
-    const registros = [];
-    snap.forEach(d => registros.push({id:d.id, ...d.data(), proyectoId: proyectoId}));
-    return registros;
-});
-
-const resultados = await Promise.all(todasPromesas);
-registrosDeProyectos = resultados.flat();
-
-aplicarFiltrosMultiples();
-}
-
-// FILTROS
+// ==================== FILTROS ====================
 function aplicarFiltrosMultiples(){
-let docs = [...registrosDeProyectos];
+    let docs = [...registrosDeProyectos];
 
-const filtroCheck = document.getElementById("filtroCompletados").checked;
-const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+    const filtroCheck = document.getElementById("filtroCompletados").checked;
+    const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+    const filtroObra = document.getElementById("filtroObra").value.toLowerCase();
 
-if(filtroCheck){
-    docs = docs.filter(d=>d.completado===true);
+    if(filtroCheck){
+        docs = docs.filter(d=>d.completado===true);
+    }
+
+    if(filtroTexto){
+        docs = docs.filter(d=>(d.tarea || "").toLowerCase().includes(filtroTexto));
+    }
+
+    if(filtroObra){
+        docs = docs.filter(d=>{
+            const obraCompleta = `${d.cluster || ""} - ${d.obra || ""}`.toLowerCase();
+            return obraCompleta.includes(filtroObra);
+        });
+    }
+
+    docs.sort((a,b)=>{
+        const pA = getPrioridad(a);
+        const pB = getPrioridad(b);
+        if(pA !== pB) return pA - pB;
+        if(!a.fechaCompromiso) return 1;
+        if(!b.fechaCompromiso) return -1;
+        return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
+    });
+
+    renderRegistrosMultiples(docs);
 }
 
-if(filtroTexto){
-    docs = docs.filter(d=>(d.tarea || "").toLowerCase().includes(filtroTexto));
-}
-
-// ORDEN
-docs.sort((a,b)=>{
-    const pA = getPrioridad(a);
-    const pB = getPrioridad(b);
-    if(pA !== pB) return pA - pB;
-    
-    if(!a.fechaCompromiso) return 1;
-    if(!b.fechaCompromiso) return -1;
-    
-    return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
-});
-
-renderRegistrosMultiples(docs);
-}
-
-// RENDER REGISTROS
+// ==================== RENDER REGISTROS ====================
 function renderRegistrosMultiples(docs){
-const lista = document.getElementById("lista");
+    const lista = document.getElementById("listaInicio");
 
-if(docs.length === 0){
-    lista.innerHTML="<div class='empty-state'>No hay registros para mostrar</div>";
-    return;
+    if(docs.length === 0){
+        lista.innerHTML="<div class='empty-state'>No hay registros para mostrar</div>";
+        return;
+    }
+
+    lista.innerHTML="";
+
+    docs.forEach(d => {
+        const proyecto = proyectos.find(p => p.id === d.proyectoId);
+        const nombreProyecto = proyecto ? proyecto.nombre : "Proyecto no encontrado";
+        const obraDisplay = d.cluster || d.obra ? `${d.cluster || ""}${d.cluster && d.obra ? " - " : ""}${d.obra || ""}` : "";
+        
+        const div = document.createElement("div");
+        div.className = "registro";
+        if(d.completado) div.classList.add("completado");
+        
+        const prioridad = getPrioridad(d);
+        
+        div.innerHTML = `
+            <button class="check-btn ${d.completado ? "activo" : ""}"
+                onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
+            
+            <div class="proyecto-tag">📁 ${nombreProyecto}</div>
+            ${obraDisplay ? `<div class="obra-tag">🏗️ ${obraDisplay}</div>` : ""}
+            <div class="prioridad">Prioridad ${prioridad}</div>
+            
+            <b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
+            <b>Urgencia:</b> ${d.urgencia || "-"}<br>
+            <b>Importancia:</b> ${d.importancia || "-"}<br>
+            
+            ${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
+            ${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
+            ${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
+            ${d.anexos ? `<a href="${d.anexos}" target="_blank">🔗 Ver anexos</a>` : ""}
+        `;
+        
+        lista.appendChild(div);
+    });
 }
 
-lista.innerHTML="";
-
-docs.forEach(d => {
-    const proyecto = proyectos.find(p => p.id === d.proyectoId);
-    const nombreProyecto = proyecto ? proyecto.nombre : "Proyecto no encontrado";
-    
-    const div = document.createElement("div");
-    div.className = "registro";
-    if(d.completado) div.classList.add("completado");
-    
-    const prioridad = getPrioridad(d);
-    
-    div.innerHTML = `
-        <button class="check-btn ${d.completado ? "activo" : ""}"
-            onclick="toggleCheck('${d.id}',${d.completado})">✔</button>
-        
-        <div class="proyecto-tag">📁 ${nombreProyecto}</div>
-        <div class="prioridad">Prioridad ${prioridad}</div>
-        
-        <b>Compromiso:</b> ${d.fechaCompromiso || "Sin fecha"}<br>
-        <b>Urgencia:</b> ${d.urgencia || "-"}<br>
-        <b>Importancia:</b> ${d.importancia || "-"}<br>
-        
-        ${d.observacion ? "<b>Obs:</b> "+d.observacion+"<br>" : ""}
-        ${d.tarea ? "<b>Tarea:</b> "+d.tarea+"<br>" : ""}
-        ${d.dolores ? "<b>Dolores:</b> "+d.dolores+"<br>" : ""}
-        ${d.anexos ? `<a href="${d.anexos}" target="_blank">🔗 Ver anexos</a>` : ""}
-    `;
-    
-    lista.appendChild(div);
-});
-}
-
-// EXPORTAR A EXCEL
+// ==================== EXPORTAR A EXCEL ====================
 window.exportarExcel = () => {
-if(proyectosSeleccionados.size === 0){
-    alert("Por favor, selecciona al menos un proyecto");
-    return;
-}
+    if(proyectosSeleccionados.size === 0){
+        alert("Por favor, selecciona al menos un proyecto");
+        return;
+    }
 
-if(registrosDeProyectos.length === 0){
-    alert("No hay registros para exportar en los proyectos seleccionados");
-    return;
-}
+    if(registrosDeProyectos.length === 0){
+        alert("No hay registros para exportar en los proyectos seleccionados");
+        return;
+    }
 
-// Aplicar filtros actuales
-let docsParaExportar = [...registrosDeProyectos];
+    let docsParaExportar = [...registrosDeProyectos];
 
-const filtroCheck = document.getElementById("filtroCompletados").checked;
-const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+    const filtroCheck = document.getElementById("filtroCompletados").checked;
+    const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
+    const filtroObra = document.getElementById("filtroObra").value.toLowerCase();
 
-if(filtroCheck){
-    docsParaExportar = docsParaExportar.filter(d => d.completado === true);
-}
+    if(filtroCheck){
+        docsParaExportar = docsParaExportar.filter(d => d.completado === true);
+    }
 
-if(filtroTexto){
-    docsParaExportar = docsParaExportar.filter(d => (d.tarea || "").toLowerCase().includes(filtroTexto));
-}
+    if(filtroTexto){
+        docsParaExportar = docsParaExportar.filter(d => (d.tarea || "").toLowerCase().includes(filtroTexto));
+    }
 
-// Ordenar
-docsParaExportar.sort((a,b)=>{
-    const pA = getPrioridad(a);
-    const pB = getPrioridad(b);
-    if(pA !== pB) return pA - pB;
-    
-    if(!a.fechaCompromiso) return 1;
-    if(!b.fechaCompromiso) return -1;
-    
-    return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
-});
+    if(filtroObra){
+        docsParaExportar = docsParaExportar.filter(d => {
+            const obraCompleta = `${d.cluster || ""} - ${d.obra || ""}`.toLowerCase();
+            return obraCompleta.includes(filtroObra);
+        });
+    }
 
-// Preparar datos
-const excelData = docsParaExportar.map(registro => {
-    const proyecto = proyectos.find(p => p.id === registro.proyectoId);
-    return {
-        'Proyecto': proyecto ? proyecto.nombre : "Desconocido",
-        'Prioridad': getPrioridad(registro),
-        'Fecha Compromiso': registro.fechaCompromiso || 'Sin fecha',
-        'Urgencia': registro.urgencia || '-',
-        'Importancia': registro.importancia || '-',
-        'Observación': registro.observacion || '',
-        'Tarea': registro.tarea || '',
-        'Dolores': registro.dolores || '',
-        'Anexos': registro.anexos || '',
-        'Completado': registro.completado ? 'Sí' : 'No'
-    };
-});
+    docsParaExportar.sort((a,b)=>{
+        const pA = getPrioridad(a);
+        const pB = getPrioridad(b);
+        if(pA !== pB) return pA - pB;
+        if(!a.fechaCompromiso) return 1;
+        if(!b.fechaCompromiso) return -1;
+        return new Date(a.fechaCompromiso) - new Date(b.fechaCompromiso);
+    });
 
-const ws = XLSX.utils.json_to_sheet(excelData);
-const colWidths = [
-    {wch:20}, {wch:10}, {wch:15}, {wch:10}, 
-    {wch:10}, {wch:40}, {wch:40}, {wch:40}, 
-    {wch:30}, {wch:12}
-];
-ws['!cols'] = colWidths;
+    const excelData = docsParaExportar.map(registro => {
+        const proyecto = proyectos.find(p => p.id === registro.proyectoId);
+        return {
+            'Proyecto': proyecto ? proyecto.nombre : "Desconocido",
+            'Prioridad': getPrioridad(registro),
+            'Fecha Compromiso': registro.fechaCompromiso || 'Sin fecha',
+            'Urgencia': registro.urgencia || '-',
+            'Importancia': registro.importancia || '-',
+            'Cluster': registro.cluster || '',
+            'Obra': registro.obra || '',
+            'Observación': registro.observacion || '',
+            'Tarea': registro.tarea || '',
+            'Dolores': registro.dolores || '',
+            'Anexos': registro.anexos || '',
+            'Completado': registro.completado ? 'Sí' : 'No'
+        };
+    });
 
-const wb = XLSX.utils.book_new();
-const fecha = new Date().toISOString().slice(0,19).replace(/:/g, '-');
-const nombreArchivo = `bitacora_multiple_${fecha}.xlsx`;
-XLSX.utils.book_append_sheet(wb, ws, 'Registros');
-XLSX.writeFile(wb, nombreArchivo);
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const colWidths = [
+        {wch:20}, {wch:10}, {wch:15}, {wch:10}, 
+        {wch:10}, {wch:20}, {wch:20}, {wch:40}, 
+        {wch:40}, {wch:40}, {wch:30}, {wch:12}
+    ];
+    ws['!cols'] = colWidths;
 
-alert(`Exportados ${excelData.length} registros`);
+    const wb = XLSX.utils.book_new();
+    const fecha = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+    const nombreArchivo = `bitacora_multiple_${fecha}.xlsx`;
+    XLSX.utils.book_append_sheet(wb, ws, 'Registros');
+    XLSX.writeFile(wb, nombreArchivo);
+
+    alert(`Exportados ${excelData.length} registros`);
 };
 
-// EVENTOS FILTRO
+// ==================== EVENTOS FILTRO ====================
 document.getElementById("filtroCompletados").addEventListener("change", aplicarFiltrosMultiples);
 document.getElementById("filtroTarea").addEventListener("input", aplicarFiltrosMultiples);
+document.getElementById("filtroObra").addEventListener("input", aplicarFiltrosMultiples);
 
-// INICIALIZAR
+// ==================== CONTROL HORARIO ====================
+function actualizarFiltroProyectoHorario() {
+    const select = document.getElementById("filtroProyectoHorario");
+    const valorActual = select.value;
+    select.innerHTML = '<option value="">Todos los proyectos</option>';
+    
+    proyectos.forEach(p => {
+        const option = document.createElement("option");
+        option.value = p.id;
+        option.textContent = p.nombre;
+        select.appendChild(option);
+    });
+    
+    select.value = valorActual;
+}
+
+async function cargarHorarios() {
+    const snap = await getDocs(collection(db,"horarios"));
+    horariosRegistrados = [];
+    snap.forEach(d => horariosRegistrados.push({id: d.id, ...d.data()}));
+    
+    renderRegistrosParaHorarios();
+    renderTablaHorarios();
+}
+
+function renderRegistrosParaHorarios() {
+    const container = document.getElementById("listaRegistrosHorario");
+    
+    if(registrosDeProyectos.length === 0) {
+        container.innerHTML = '<div class="empty-state">No hay registros disponibles. Selecciona proyectos desde la pestaña Inicio.</div>';
+        return;
+    }
+
+    const filtroProyecto = document.getElementById("filtroProyectoHorario").value;
+    const filtroTarea = document.getElementById("filtroTareaHorario").value.toLowerCase();
+    const filtroObra = document.getElementById("filtroObraHorario").value.toLowerCase();
+
+    let registrosFiltrados = registrosDeProyectos;
+
+    if(filtroProyecto) {
+        registrosFiltrados = registrosFiltrados.filter(r => r.proyectoId === filtroProyecto);
+    }
+
+    if(filtroTarea) {
+        registrosFiltrados = registrosFiltrados.filter(r => (r.tarea || "").toLowerCase().includes(filtroTarea));
+    }
+
+    if(filtroObra) {
+        registrosFiltrados = registrosFiltrados.filter(r => {
+            const obraCompleta = `${r.cluster || ""} ${r.obra || ""}`.toLowerCase();
+            return obraCompleta.includes(filtroObra);
+        });
+    }
+
+    if(registrosFiltrados.length === 0) {
+        container.innerHTML = '<div class="empty-state">No hay registros que coincidan con los filtros</div>';
+        return;
+    }
+
+    container.innerHTML = "";
+    registrosFiltrados.forEach(registro => {
+        const proyecto = proyectos.find(p => p.id === registro.proyectoId);
+        const nombreProyecto = proyecto ? proyecto.nombre : "Desconocido";
+        const obraDisplay = registro.cluster || registro.obra ? `${registro.cluster || ""}${registro.cluster && registro.obra ? " - " : ""}${registro.obra || ""}` : "Sin obra";
+        
+        const div = document.createElement("div");
+        div.className = "registro-horario";
+        
+        // Buscar si ya tiene horario registrado
+        const horarioExistente = horariosRegistrados.find(h => h.bitacoraId === registro.id);
+        
+        div.innerHTML = `
+            <div class="registro-horario-header">
+                <div>
+                    <div class="registro-horario-titulo">${registro.tarea || "Sin tarea"}</div>
+                    <div class="registro-horario-meta">
+                        <span><strong>Proyecto:</strong> ${nombreProyecto}</span>
+                        <span><strong>Obra:</strong> ${obraDisplay}</span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-exito boton-pequeño" onclick="toggleFormularioHorario('${registro.id}')">
+                ${horarioExistente ? '✎ Editar Tiempos' : '➕ Agregar Tiempos'}
+            </button>
+            
+            ${horarioExistente ? `
+                <div class="tiempo-info">
+                    <strong>Inicio:</strong> ${formatearFechaHora(horarioExistente.inicioReal || "")}<br>
+                    <strong>Fin Previsto:</strong> ${formatearFechaHora(horarioExistente.finPrevisto || "")}<br>
+                    <strong>Fin Real:</strong> ${formatearFechaHora(horarioExistente.finReal || "")}<br>
+                    ${horarioExistente.inicioReal && horarioExistente.finReal ? `
+                        <strong>Duración Real:</strong> ${(() => {
+                            const dur = calcularDuracionReal(horarioExistente.inicioReal, horarioExistente.finReal);
+                            return dur ? `${dur.horas}h ${dur.minutos}m` : "-";
+                        })()} <br>
+                    ` : ""}
+                    ${horarioExistente.finPrevisto && horarioExistente.finReal ? `
+                        <strong style="color: ${(() => {
+                            const var_tiempo = calcularDiferenciaTiempos(horarioExistente.finPrevisto, horarioExistente.finReal);
+                            return var_tiempo && var_tiempo.esRetraso ? '#dc2626' : '#16a34a';
+                        })()}">Variación:</strong>
+                        <span>${(() => {
+                            const var_tiempo = calcularDiferenciaTiempos(horarioExistente.finPrevisto, horarioExistente.finReal);
+                            return var_tiempo ? `${var_tiempo.signo}${var_tiempo.horas}h ${var_tiempo.minutos}m` : "-";
+                        })()} </span>
+                    ` : ""}
+                </div>
+            ` : ""}
+            
+            <div id="form-${registro.id}" class="formulario-horario">
+                <label>Fecha-Hora Inicio de Actividad</label>
+                <input type="datetime-local" id="inicio-${registro.id}" value="${horarioExistente ? horarioExistente.inicioReal?.replace(' ', 'T').substring(0, 16) : ""}">
+                
+                <label>Fecha-Hora Fin Previsto</label>
+                <input type="datetime-local" id="finPrevisto-${registro.id}" value="${horarioExistente ? horarioExistente.finPrevisto?.replace(' ', 'T').substring(0, 16) : ""}">
+                
+                <label>Fecha-Hora Fin Real</label>
+                <input type="datetime-local" id="finReal-${registro.id}" value="${horarioExistente ? horarioExistente.finReal?.replace(' ', 'T').substring(0, 16) : ""}">
+                
+                <button class="btn-exito boton-pequeño" onclick="guardarHorario('${registro.id}', '${horarioExistente ? horarioExistente.id : 'nuevo'}')">
+                    💾 Guardar Tiempos
+                </button>
+                <button class="btn-secundario boton-pequeño" onclick="toggleFormularioHorario('${registro.id}')">
+                    ✕ Cerrar
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(div);
+    });
+}
+
+window.toggleFormularioHorario = (registroId) => {
+    const form = document.getElementById(`form-${registroId}`);
+    form.classList.toggle('activo');
+};
+
+window.guardarHorario = async (registroId, horarioId) => {
+    const inicioReal = document.getElementById(`inicio-${registroId}`).value;
+    const finPrevisto = document.getElementById(`finPrevisto-${registroId}`).value;
+    const finReal = document.getElementById(`finReal-${registroId}`).value;
+
+    if(!inicioReal || !finPrevisto || !finReal) {
+        alert("Completa todos los campos de tiempo");
+        return;
+    }
+
+    const bitacoraId = registroId;
+    const proyecto = proyectos.find(p => registrosDeProyectos.find(r => r.id === registroId)?.proyectoId === p.id);
+    
+    if(horarioId === 'nuevo') {
+        await addDoc(collection(db,"horarios"),{
+            bitacoraId: bitacoraId,
+            proyectoId: proyecto?.id || "",
+            inicioReal: inicioReal,
+            finPrevisto: finPrevisto,
+            finReal: finReal,
+            fecha: serverTimestamp()
+        });
+    } else {
+        await updateDoc(doc(db,"horarios",horarioId),{
+            inicioReal: inicioReal,
+            finPrevisto: finPrevisto,
+            finReal: finReal
+        });
+    }
+
+    cargarHorarios();
+    alert("Horario registrado exitosamente");
+};
+
+function renderTablaHorarios() {
+    const tbody = document.getElementById("tablaHorariosBody");
+    
+    if(horariosRegistrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #9ca3af;">No hay registros de horarios</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = "";
+
+    horariosRegistrados.forEach(horario => {
+        const registro = registrosDeProyectos.find(r => r.id === horario.bitacoraId);
+        const proyecto = proyectos.find(p => p.id === horario.proyectoId);
+        
+        if(!registro) return;
+
+        const duracion = calcularDuracionReal(horario.inicioReal, horario.finReal);
+        const variacion = calcularDiferenciaTiempos(horario.finPrevisto, horario.finReal);
+        
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><span class="badge badge-proyecto">${proyecto?.nombre || "Desconocido"}</span></td>
+            <td>${registro.tarea || "-"}</td>
+            <td><span class="badge badge-obra">${registro.cluster || ""}${registro.cluster && registro.obra ? " - " : ""}${registro.obra || ""}</span></td>
+            <td>${formatearFechaHora(horario.inicioReal)}</td>
+            <td>${formatearFechaHora(horario.finPrevisto)}</td>
+            <td>${formatearFechaHora(horario.finReal)}</td>
+            <td>${duracion ? `${duracion.horas}h ${duracion.minutos}m` : "-"}</td>
+            <td ${variacion && variacion.esRetraso ? 'style="color: #dc2626; font-weight: bold;"' : 'style="color: #16a34a; font-weight: bold;"'}>
+                ${variacion ? `${variacion.signo}${variacion.horas}h ${variacion.minutos}m` : "-"}
+            </td>
+            <td><span class="badge ${variacion && variacion.esRetraso ? '' : 'badge-estado'}">
+                ${variacion && variacion.esRetraso ? '⚠️ Retraso' : '✓ A tiempo'}
+            </span></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+document.getElementById("filtroProyectoHorario")?.addEventListener("change", renderRegistrosParaHorarios);
+document.getElementById("filtroTareaHorario")?.addEventListener("input", renderRegistrosParaHorarios);
+document.getElementById("filtroObraHorario")?.addEventListener("input", renderRegistrosParaHorarios);
+
+// ==================== INICIALIZAR ====================
 cargarProyectos();
 
 </script>
