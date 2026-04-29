@@ -521,6 +521,9 @@ label {
 
 <div class="card">
     <h3>Registros de Proyectos Seleccionados</h3>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button onclick="copiarAnexos()" class="btn-secundario">📋 Copiar Todos los Anexos</button>
+    </div>
     <div id="listaInicio" style="margin-top: 20px;">
         <div class="empty-state">Selecciona proyectos arriba</div>
     </div>
@@ -1097,7 +1100,40 @@ function renderRegistrosMultiples(docs){
     });
 }
 
-// ==================== EXPORTAR A EXCEL ====================
+// ==================== COPIAR ANEXOS ====================
+window.copiarAnexos = () => {
+    // Obtener todos los anexos de los registros que se están mostrando
+    const listaDiv = document.getElementById("listaInicio");
+    const registrosDiv = listaDiv.querySelectorAll(".registro");
+    
+    if(registrosDiv.length === 0) {
+        alert("No hay registros para copiar");
+        return;
+    }
+
+    let anexos = [];
+    
+    registrosDiv.forEach(registro => {
+        const link = registro.querySelector("a[target='_blank']");
+        if(link && link.href) {
+            anexos.push(link.href);
+        }
+    });
+
+    if(anexos.length === 0) {
+        alert("No hay anexos (URLs) en los registros filtrados");
+        return;
+    }
+
+    // Copiar al portapapeles
+    const textoAcopiar = anexos.join("\n");
+    navigator.clipboard.writeText(textoAcopiar).then(() => {
+        alert(`✅ Se copiaron ${anexos.length} anexo(s) al portapapeles:\n\n${textoAcopiar}`);
+    }).catch(err => {
+        console.error("Error al copiar:", err);
+        alert("Error al copiar al portapapeles");
+    });
+};
 window.exportarExcel = () => {
     if(proyectosSeleccionados.size === 0){
         alert("Por favor, selecciona al menos un proyecto");
