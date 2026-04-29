@@ -664,7 +664,7 @@ window.cambiarPestaña = (pestanya) => {
     
     if (pestanya === 'horarios') {
         cargarProyectosHorario();
-        cargarHorarios();
+        cargarHorariosCompleto();
     }
 };
 
@@ -1347,6 +1347,14 @@ async function cargarHorarios() {
     renderTablaHorarios();
 }
 
+async function cargarHorariosCompleto() {
+    const snap = await getDocs(collection(db,"horarios"));
+    horariosRegistrados = [];
+    snap.forEach(d => horariosRegistrados.push({id: d.id, ...d.data()}));
+    
+    renderTablaHorarios();
+}
+
 function renderTablaHorarios() {
     const tbody = document.getElementById("tablaHorariosBody");
     
@@ -1395,6 +1403,15 @@ document.getElementById("filtroObraHorario")?.addEventListener("input", () => {
 
 // ==================== INICIALIZAR ====================
 cargarProyectos();
+
+async function inicializarHorarios() {
+    const snap = await getDocs(collection(db,"horarios"));
+    horariosRegistrados = [];
+    snap.forEach(d => horariosRegistrados.push({id: d.id, ...d.data()}));
+    renderTablaHorarios();
+}
+
+inicializarHorarios();
 
 </script>
 
