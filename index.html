@@ -517,6 +517,7 @@ label {
     </label>
     <input id="filtroTarea" placeholder="Filtrar por tarea...">
     <input id="filtroObra" placeholder="Filtrar por obra (cluster - obra)...">
+    <input id="filtroObservacion" placeholder="Filtrar por observación...">
 </div>
 
 <div class="card">
@@ -1028,6 +1029,7 @@ function aplicarFiltrosMultiples(){
     const filtroCheck = document.getElementById("filtroCompletados").checked;
     const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
     const filtroObra = document.getElementById("filtroObra").value.toLowerCase();
+    const filtroObservacion = document.getElementById("filtroObservacion").value.toLowerCase();
 
     if(filtroCheck){
         docs = docs.filter(d=>d.completado===true);
@@ -1042,6 +1044,10 @@ function aplicarFiltrosMultiples(){
             const obraCompleta = `${d.cluster || ""} - ${d.obra || ""}`.toLowerCase();
             return obraCompleta.includes(filtroObra);
         });
+    }
+
+    if(filtroObservacion){
+        docs = docs.filter(d=>(d.observacion || "").toLowerCase().includes(filtroObservacion));
     }
 
     docs.sort((a,b)=>{
@@ -1150,6 +1156,7 @@ window.exportarExcel = () => {
     const filtroCheck = document.getElementById("filtroCompletados").checked;
     const filtroTexto = document.getElementById("filtroTarea").value.toLowerCase();
     const filtroObra = document.getElementById("filtroObra").value.toLowerCase();
+    const filtroObservacion = document.getElementById("filtroObservacion").value.toLowerCase();
 
     if(filtroCheck){
         docsParaExportar = docsParaExportar.filter(d => d.completado === true);
@@ -1164,6 +1171,10 @@ window.exportarExcel = () => {
             const obraCompleta = `${d.cluster || ""} - ${d.obra || ""}`.toLowerCase();
             return obraCompleta.includes(filtroObra);
         });
+    }
+
+    if(filtroObservacion){
+        docsParaExportar = docsParaExportar.filter(d => (d.observacion || "").toLowerCase().includes(filtroObservacion));
     }
 
     docsParaExportar.sort((a,b)=>{
@@ -1214,6 +1225,7 @@ window.exportarExcel = () => {
 document.getElementById("filtroCompletados").addEventListener("change", aplicarFiltrosMultiples);
 document.getElementById("filtroTarea").addEventListener("input", aplicarFiltrosMultiples);
 document.getElementById("filtroObra").addEventListener("input", aplicarFiltrosMultiples);
+document.getElementById("filtroObservacion").addEventListener("input", aplicarFiltrosMultiples);
 
 // ==================== CONTROL HORARIO ====================
 async function cargarRegistrosHorario(){
