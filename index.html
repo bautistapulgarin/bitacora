@@ -845,9 +845,23 @@ function cargarProyectosHorario(){
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("busquedaProyectoHorarioFiltro").addEventListener("input",(e)=>{
-        const val=e.target.value.toLowerCase();
-        const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
-        renderProyectosHorario(filtrados);
+        const val=e.target.value.toLowerCase().trim();
+        if(val === ""){
+            renderProyectosHorario(proyectos);
+        } else {
+            const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
+            renderProyectosHorario(filtrados);
+        }
+    });
+
+    document.getElementById("busquedaProyecto").addEventListener("input",(e)=>{
+        const val=e.target.value.toLowerCase().trim();
+        if(val === ""){
+            renderProyectos(proyectos);
+        } else {
+            const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
+            renderProyectos(filtrados);
+        }
     });
 });
 
