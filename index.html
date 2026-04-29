@@ -1121,8 +1121,12 @@ window.copiarAnexos = () => {
     
     registrosDiv.forEach(registro => {
         const link = registro.querySelector("a[target='_blank']");
-        if(link && link.href) {
-            anexos.push(link.href);
+        if(link) {
+            // Obtener el href directamente del elemento
+            const url = link.getAttribute("href");
+            if(url) {
+                anexos.push(url);
+            }
         }
     });
 
