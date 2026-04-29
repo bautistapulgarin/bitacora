@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitácora v3.0 - Múltiples Proyectos + Control Horario</title>
+<title>Bitácora v3.0 - Control Horario</title>
 
 <style>
 * {
@@ -146,7 +146,6 @@ button:active {
 
 .registro {
     padding: 12px;
-    border-bottom: 1px solid #e5e7eb;
     position: relative;
     background: white;
     margin-bottom: 10px;
@@ -222,14 +221,6 @@ button:active {
 
 .btn-secundario:hover {
     background: #4b5563;
-}
-
-.btn-peligro {
-    background: #dc2626;
-}
-
-.btn-peligro:hover {
-    background: #b91c1c;
 }
 
 .btn-exito {
@@ -328,16 +319,15 @@ button:active {
     transform: none;
 }
 
-/* Estilos para Control Horario */
-.grid-2-col {
+.filtro-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-top: 10px;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 @media (max-width: 768px) {
-    .grid-2-col {
+    .filtro-row {
         grid-template-columns: 1fr;
     }
 }
@@ -351,48 +341,12 @@ button:active {
     border-left: 4px solid #3b82f6;
 }
 
-.registro-horario.completado {
-    border-left-color: #16a34a;
-    background: #f0fdf4;
-}
-
-.registro-horario-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 10px;
-}
-
-.registro-horario-titulo {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.registro-horario-meta {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 10px;
-}
-
 .tiempo-info {
     background: #f9fafb;
     padding: 8px;
     border-radius: 4px;
     font-size: 13px;
     margin-top: 5px;
-}
-
-.tiempo-info.alerta {
-    background: #fef2f2;
-    color: #991b1b;
-}
-
-.tiempo-info.exito {
-    background: #f0fdf4;
-    color: #166534;
 }
 
 .formulario-horario {
@@ -405,19 +359,6 @@ button:active {
 
 .formulario-horario.activo {
     display: block;
-}
-
-.filtro-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-@media (max-width: 768px) {
-    .filtro-row {
-        grid-template-columns: 1fr;
-    }
 }
 
 label {
@@ -484,22 +425,13 @@ label {
     color: #166534;
 }
 
-.estado-activo {
-    color: #16a34a;
-    font-weight: bold;
-}
-
-.estado-inactivo {
-    color: #6b7280;
-}
-
 </style>
 </head>
 
 <body>
 
 <div class="header">
-    <h2>Bitácora v3.0 - Múltiples Proyectos + Control Horario</h2>
+    <h2>Bitácora v3.0 - Control Horario</h2>
 </div>
 
 <div class="container">
@@ -510,7 +442,7 @@ label {
     <button class="tab-button" onclick="cambiarPestaña('horarios')">⏱️ Control Horario</button>
 </div>
 
-<!-- PESTAÑA PRINCIPAL (INICIO + REGISTROS COMBINADOS) -->
+<!-- PESTAÑA PRINCIPAL (PROYECTOS Y REGISTROS) -->
 <div id="tab-principal" class="tab-content activo">
 
 <div class="card">
@@ -544,10 +476,10 @@ label {
     </div>
 
     <label>Obra de Construcción - Cluster</label>
-    <input id="cluster" placeholder="Ej: Cluster A, Cluster B...">
+    <input id="cluster" placeholder="Ej: Cluster A, Zona Norte...">
     
     <label>Obra de Construcción - Obra</label>
-    <input id="obra" placeholder="Ej: Cimentación, Estructura, Acabados...">
+    <input id="obra" placeholder="Ej: Cimentación, Estructura...">
 
     <textarea id="observacion" placeholder="Observación"></textarea>
     <textarea id="tarea" placeholder="Tarea"></textarea>
@@ -600,15 +532,20 @@ label {
 <div id="tab-horarios" class="tab-content">
 
 <div class="card">
-    <h3>Control de Tiempos</h3>
+    <h3>Seleccionar Proyectos para Control Horario</h3>
+    <input id="busquedaProyectoHorarioFiltro" placeholder="Buscar proyecto...">
+    <div id="listaProyectosHorario" class="lista-proyectos"></div>
+    <div class="filtros-acciones">
+        <button onclick="seleccionarTodosHorario()" class="btn-secundario" style="flex:1">Seleccionar Todos</button>
+        <button onclick="deseleccionarTodosHorario()" class="btn-secundario" style="flex:1">Deseleccionar Todos</button>
+    </div>
+    <div id="resumenProyectosHorario" class="resumen"></div>
+</div>
+
+<div class="card">
+    <h3>Filtros de Búsqueda</h3>
     
     <div class="filtro-row">
-        <div>
-            <label>Filtrar por Proyecto</label>
-            <select id="filtroProyectoHorario">
-                <option value="">Todos los proyectos</option>
-            </select>
-        </div>
         <div>
             <label>Filtrar por Tarea</label>
             <input id="filtroTareaHorario" placeholder="Buscar tarea...">
@@ -621,7 +558,7 @@ label {
 
     <label>Registros disponibles:</label>
     <div id="listaRegistrosHorario" style="margin-top: 10px;">
-        <div class="empty-state">No hay registros disponibles</div>
+        <div class="empty-state">Selecciona proyectos arriba</div>
     </div>
 </div>
 
@@ -671,7 +608,9 @@ const db = getFirestore(app);
 
 let proyectos = [];
 let proyectosSeleccionados = new Map();
+let proyectosSeleccionadosHorario = new Map();
 let registrosDeProyectos = [];
+let registrosHorarioDisponibles = [];
 let horariosRegistrados = [];
 let proyectoSeleccionadoNuevo = null;
 
@@ -724,6 +663,7 @@ window.cambiarPestaña = (pestanya) => {
     event.target.classList.add('activo');
     
     if (pestanya === 'horarios') {
+        cargarProyectosHorario();
         cargarHorarios();
     }
 };
@@ -749,7 +689,6 @@ async function cargarProyectos(){
     snap.forEach(d=>proyectos.push({id:d.id,...d.data()}));
     renderProyectos(proyectos);
     actualizarDropdownProyectos();
-    actualizarFiltroProyectoHorario();
 }
 
 function renderProyectos(lista){
@@ -825,6 +764,93 @@ window.deseleccionarTodos = () => {
     renderProyectos(proyectos);
 };
 
+// ==================== PROYECTOS PARA CONTROL HORARIO ====================
+function renderProyectosHorario(lista){
+    const cont = document.getElementById("listaProyectosHorario");
+    cont.innerHTML="";
+    if(lista.length === 0){
+        cont.innerHTML = '<div style="padding: 10px; color: #9ca3af;">No hay proyectos</div>';
+        return;
+    }
+    lista.forEach(p=>{
+        const div=document.createElement("div");
+        div.className="item-proyecto";
+        if(proyectosSeleccionadosHorario.has(p.id)){
+            div.classList.add("proyecto-seleccionado");
+        }
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = proyectosSeleccionadosHorario.has(p.id);
+        checkbox.onchange = (e) => {
+            e.stopPropagation();
+            if(checkbox.checked){
+                proyectosSeleccionadosHorario.set(p.id, p);
+            } else {
+                proyectosSeleccionadosHorario.delete(p.id);
+            }
+            actualizarResumenHorario();
+            cargarRegistrosHorario();
+            renderProyectosHorario(proyectos);
+        };
+        const label = document.createElement("label");
+        label.textContent = p.nombre;
+        label.onclick = () => {
+            checkbox.checked = !checkbox.checked;
+            if(checkbox.checked){
+                proyectosSeleccionadosHorario.set(p.id, p);
+            } else {
+                proyectosSeleccionadosHorario.delete(p.id);
+            }
+            actualizarResumenHorario();
+            cargarRegistrosHorario();
+            renderProyectosHorario(proyectos);
+        };
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        cont.appendChild(div);
+    });
+    actualizarResumenHorario();
+}
+
+function actualizarResumenHorario(){
+    const resumen = document.getElementById("resumenProyectosHorario");
+    const count = proyectosSeleccionadosHorario.size;
+    if(count === 0){
+        resumen.innerHTML = "No hay proyectos seleccionados";
+    } else {
+        const nombres = Array.from(proyectosSeleccionadosHorario.values()).map(p => p.nombre).join(", ");
+        resumen.innerHTML = `<strong>${count} proyecto(s) seleccionado(s):</strong> ${nombres}`;
+    }
+}
+
+window.seleccionarTodosHorario = () => {
+    proyectos.forEach(p => {
+        proyectosSeleccionadosHorario.set(p.id, p);
+    });
+    actualizarResumenHorario();
+    cargarRegistrosHorario();
+    renderProyectosHorario(proyectos);
+};
+
+window.deseleccionarTodosHorario = () => {
+    proyectosSeleccionadosHorario.clear();
+    actualizarResumenHorario();
+    cargarRegistrosHorario();
+    renderProyectosHorario(proyectos);
+};
+
+function cargarProyectosHorario(){
+    renderProyectosHorario(proyectos);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("busquedaProyectoHorarioFiltro").addEventListener("input",(e)=>{
+        const val=e.target.value.toLowerCase();
+        const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
+        renderProyectosHorario(filtrados);
+    });
+});
+
 // ==================== SELECTOR PROYECTO NUEVO REGISTRO ====================
 function actualizarDropdownProyectos(){
     const dropdown = document.getElementById("dropdownProyectos");
@@ -894,12 +920,6 @@ document.addEventListener("click", (e) => {
     }
 });
 
-document.getElementById("busquedaProyecto").addEventListener("input",(e)=>{
-    const val=e.target.value.toLowerCase();
-    const filtrados = proyectos.filter(p=>p.nombre.toLowerCase().includes(val));
-    renderProyectos(filtrados);
-});
-
 // ==================== GUARDAR REGISTRO ====================
 window.guardarRegistro = async ()=>{
     if(!proyectoSeleccionadoNuevo) {
@@ -964,7 +984,7 @@ async function cargarRegistrosMultiples(){
     lista.innerHTML="Cargando...";
 
     if(proyectosSeleccionados.size === 0){
-        lista.innerHTML="<div class='empty-state'>Selecciona proyectos desde la pestaña Inicio</div>";
+        lista.innerHTML="<div class='empty-state'>Selecciona proyectos arriba</div>";
         registrosDeProyectos = [];
         return;
     }
@@ -1133,7 +1153,7 @@ window.exportarExcel = () => {
 
     const wb = XLSX.utils.book_new();
     const fecha = new Date().toISOString().slice(0,19).replace(/:/g, '-');
-    const nombreArchivo = `bitacora_multiple_${fecha}.xlsx`;
+    const nombreArchivo = `bitacora_${fecha}.xlsx`;
     XLSX.utils.book_append_sheet(wb, ws, 'Registros');
     XLSX.writeFile(wb, nombreArchivo);
 
@@ -1146,47 +1166,40 @@ document.getElementById("filtroTarea").addEventListener("input", aplicarFiltrosM
 document.getElementById("filtroObra").addEventListener("input", aplicarFiltrosMultiples);
 
 // ==================== CONTROL HORARIO ====================
-function actualizarFiltroProyectoHorario() {
-    const select = document.getElementById("filtroProyectoHorario");
-    const valorActual = select.value;
-    select.innerHTML = '<option value="">Todos los proyectos</option>';
-    
-    proyectos.forEach(p => {
-        const option = document.createElement("option");
-        option.value = p.id;
-        option.textContent = p.nombre;
-        select.appendChild(option);
-    });
-    
-    select.value = valorActual;
-}
-
-async function cargarHorarios() {
-    const snap = await getDocs(collection(db,"horarios"));
-    horariosRegistrados = [];
-    snap.forEach(d => horariosRegistrados.push({id: d.id, ...d.data()}));
-    
-    renderRegistrosParaHorarios();
-    renderTablaHorarios();
-}
-
-function renderRegistrosParaHorarios() {
-    const container = document.getElementById("listaRegistrosHorario");
-    
-    if(registrosDeProyectos.length === 0) {
-        container.innerHTML = '<div class="empty-state">No hay registros disponibles. Selecciona proyectos desde la pestaña Inicio.</div>';
+async function cargarRegistrosHorario(){
+    if(proyectosSeleccionadosHorario.size === 0) {
+        document.getElementById("listaRegistrosHorario").innerHTML = '<div class="empty-state">Selecciona proyectos arriba</div>';
+        registrosHorarioDisponibles = [];
         return;
     }
 
-    const filtroProyecto = document.getElementById("filtroProyectoHorario").value;
+    const proyectoIds = Array.from(proyectosSeleccionadosHorario.keys());
+    const todasPromesas = proyectoIds.map(async (proyectoId) => {
+        const q = query(collection(db,"bitacora"), where("proyectoId","==",proyectoId));
+        const snap = await getDocs(q);
+        const registros = [];
+        snap.forEach(d => registros.push({id:d.id, ...d.data(), proyectoId: proyectoId}));
+        return registros;
+    });
+
+    const resultados = await Promise.all(todasPromesas);
+    registrosHorarioDisponibles = resultados.flat();
+    
+    renderRegistrosParaHorarios(registrosHorarioDisponibles);
+}
+
+function renderRegistrosParaHorarios(registros) {
+    const container = document.getElementById("listaRegistrosHorario");
+    
+    if(registros.length === 0) {
+        container.innerHTML = '<div class="empty-state">No hay registros disponibles</div>';
+        return;
+    }
+
     const filtroTarea = document.getElementById("filtroTareaHorario").value.toLowerCase();
     const filtroObra = document.getElementById("filtroObraHorario").value.toLowerCase();
 
-    let registrosFiltrados = registrosDeProyectos;
-
-    if(filtroProyecto) {
-        registrosFiltrados = registrosFiltrados.filter(r => r.proyectoId === filtroProyecto);
-    }
+    let registrosFiltrados = registros;
 
     if(filtroTarea) {
         registrosFiltrados = registrosFiltrados.filter(r => (r.tarea || "").toLowerCase().includes(filtroTarea));
@@ -1213,18 +1226,12 @@ function renderRegistrosParaHorarios() {
         const div = document.createElement("div");
         div.className = "registro-horario";
         
-        // Buscar si ya tiene horario registrado
         const horarioExistente = horariosRegistrados.find(h => h.bitacoraId === registro.id);
         
         div.innerHTML = `
-            <div class="registro-horario-header">
-                <div>
-                    <div class="registro-horario-titulo">${registro.tarea || "Sin tarea"}</div>
-                    <div class="registro-horario-meta">
-                        <span><strong>Proyecto:</strong> ${nombreProyecto}</span>
-                        <span><strong>Obra:</strong> ${obraDisplay}</span>
-                    </div>
-                </div>
+            <div style="font-weight: bold; margin-bottom: 10px;">${registro.tarea || "Sin tarea"}</div>
+            <div style="font-size: 13px; color: #6b7280; margin-bottom: 10px;">
+                <strong>Proyecto:</strong> ${nombreProyecto} | <strong>Obra:</strong> ${obraDisplay}
             </div>
             <button class="btn-exito boton-pequeño" onclick="toggleFormularioHorario('${registro.id}')">
                 ${horarioExistente ? '✎ Editar Tiempos' : '➕ Agregar Tiempos'}
@@ -1293,7 +1300,8 @@ window.guardarHorario = async (registroId, horarioId) => {
     }
 
     const bitacoraId = registroId;
-    const proyecto = proyectos.find(p => registrosDeProyectos.find(r => r.id === registroId)?.proyectoId === p.id);
+    const registro = registrosHorarioDisponibles.find(r => r.id === registroId);
+    const proyecto = proyectos.find(p => p.id === registro?.proyectoId);
     
     if(horarioId === 'nuevo') {
         await addDoc(collection(db,"horarios"),{
@@ -1316,6 +1324,15 @@ window.guardarHorario = async (registroId, horarioId) => {
     alert("Horario registrado exitosamente");
 };
 
+async function cargarHorarios() {
+    const snap = await getDocs(collection(db,"horarios"));
+    horariosRegistrados = [];
+    snap.forEach(d => horariosRegistrados.push({id: d.id, ...d.data()}));
+    
+    renderRegistrosParaHorarios(registrosHorarioDisponibles);
+    renderTablaHorarios();
+}
+
 function renderTablaHorarios() {
     const tbody = document.getElementById("tablaHorariosBody");
     
@@ -1327,7 +1344,7 @@ function renderTablaHorarios() {
     tbody.innerHTML = "";
 
     horariosRegistrados.forEach(horario => {
-        const registro = registrosDeProyectos.find(r => r.id === horario.bitacoraId);
+        const registro = registrosHorarioDisponibles.find(r => r.id === horario.bitacoraId);
         const proyecto = proyectos.find(p => p.id === horario.proyectoId);
         
         if(!registro) return;
@@ -1355,9 +1372,12 @@ function renderTablaHorarios() {
     });
 }
 
-document.getElementById("filtroProyectoHorario")?.addEventListener("change", renderRegistrosParaHorarios);
-document.getElementById("filtroTareaHorario")?.addEventListener("input", renderRegistrosParaHorarios);
-document.getElementById("filtroObraHorario")?.addEventListener("input", renderRegistrosParaHorarios);
+document.getElementById("filtroTareaHorario")?.addEventListener("input", () => {
+    renderRegistrosParaHorarios(registrosHorarioDisponibles);
+});
+document.getElementById("filtroObraHorario")?.addEventListener("input", () => {
+    renderRegistrosParaHorarios(registrosHorarioDisponibles);
+});
 
 // ==================== INICIALIZAR ====================
 cargarProyectos();
