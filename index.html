@@ -506,13 +506,12 @@ label {
 
 <!-- PESTAÑAS -->
 <div class="tabs-container">
-    <button class="tab-button activo" onclick="cambiarPestaña('inicio')">📋 Inicio</button>
-    <button class="tab-button" onclick="cambiarPestaña('registros')">📝 Registros</button>
+    <button class="tab-button activo" onclick="cambiarPestaña('principal')">📋 Proyectos y Registros</button>
     <button class="tab-button" onclick="cambiarPestaña('horarios')">⏱️ Control Horario</button>
 </div>
 
-<!-- PESTAÑA INICIO -->
-<div id="tab-inicio" class="tab-content activo">
+<!-- PESTAÑA PRINCIPAL (INICIO + REGISTROS COMBINADOS) -->
+<div id="tab-principal" class="tab-content activo">
 
 <div class="card">
     <h3>Crear Proyecto</h3>
@@ -531,11 +530,6 @@ label {
     <div id="resumenProyectos" class="resumen"></div>
     <button onclick="exportarExcel()">Descargar Excel (Proyectos Seleccionados)</button>
 </div>
-
-</div>
-
-<!-- PESTAÑA REGISTROS -->
-<div id="tab-registros" class="tab-content">
 
 <div class="card">
     <h3>Nuevo Registro</h3>
@@ -596,7 +590,7 @@ label {
 <div class="card">
     <h3>Registros de Proyectos Seleccionados</h3>
     <div id="listaInicio" style="margin-top: 20px;">
-        <div class="empty-state">Selecciona proyectos desde la pestaña Inicio</div>
+        <div class="empty-state">Selecciona proyectos arriba</div>
     </div>
 </div>
 
@@ -731,8 +725,6 @@ window.cambiarPestaña = (pestanya) => {
     
     if (pestanya === 'horarios') {
         cargarHorarios();
-    } else if (pestanya === 'registros') {
-        cargarRegistrosMultiples();
     }
 };
 
